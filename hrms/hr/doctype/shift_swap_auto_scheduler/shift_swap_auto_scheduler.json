@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-16 13:34:14.046819",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable",
+  "default_cancel_existing",
+  "column_break_pluz",
+  "default_respect_stay_flag",
+  "section_break_mydo",
+  "rules_table"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enable",
+   "fieldtype": "Check",
+   "label": "Enable"
+  },
+  {
+   "default": "0",
+   "fieldname": "default_cancel_existing",
+   "fieldtype": "Check",
+   "label": "Default Cancel Existing"
+  },
+  {
+   "fieldname": "column_break_pluz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "default_respect_stay_flag",
+   "fieldtype": "Check",
+   "label": "Default Respect Stay In Current Shift"
+  },
+  {
+   "fieldname": "section_break_mydo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rules_table",
+   "fieldtype": "Table",
+   "label": "Rules",
+   "options": "Shift Swap Auto Rule"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-11-16 14:01:53.812840",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Shift Swap Auto Scheduler",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

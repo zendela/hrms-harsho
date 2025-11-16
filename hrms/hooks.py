@@ -367,3 +367,18 @@ company_data_to_be_ignored = [
 	"Employee Onboarding Template",
 	"Employee Separation Template",
 ]
+# override_whitelisted_methods = {"hrms.hr.utils.shift_swap"}
+
+scheduler_events = {
+    "daily": [
+        "hrms.hr.doctype.shift_swap_auto_scheduler.shift_swap_auto_scheduler.scheduler_daily"
+    ]
+}
+
+# Ship the Custom Field as a fixture so install/bench migrate adds it
+# fixtures = [
+#     {
+#         "doctype": "Custom Field",
+#         "filters": [["dt", "=", "Employee"], ["fieldname", "=", "stay_in_current_shift"]]
+#     }
+# ]

@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-16 12:10:23.398896",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_2lij",
+  "shift_a",
+  "from_date",
+  "new_from_date",
+  "respect_stay_flag",
+  "column_break_afll",
+  "shift_b",
+  "to_date",
+  "new_to_date",
+  "cancel_existing",
+  "status",
+  "amended_from",
+  "employees_section",
+  "shift_a_table",
+  "column_break_mbsz",
+  "shift_b_table"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2lij",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Swap Shift",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "shift_a",
+   "fieldtype": "Link",
+   "label": "Shift A",
+   "options": "Shift Type"
+  },
+  {
+   "default": "Today",
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "default": "1",
+   "fieldname": "respect_stay_flag",
+   "fieldtype": "Check",
+   "label": "Respect Stay"
+  },
+  {
+   "fieldname": "column_break_afll",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shift_b",
+   "fieldtype": "Link",
+   "label": "Shift B",
+   "options": "Shift Type"
+  },
+  {
+   "default": "Today",
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "default": "0",
+   "fieldname": "cancel_existing",
+   "fieldtype": "Check",
+   "label": "Cancel Existing"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPlanned\nExecuted\nCancelled"
+  },
+  {
+   "fieldname": "employees_section",
+   "fieldtype": "Section Break",
+   "label": "Employees"
+  },
+  {
+   "fieldname": "shift_a_table",
+   "fieldtype": "Table",
+   "label": "Shift A",
+   "options": "Shift A"
+  },
+  {
+   "fieldname": "column_break_mbsz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shift_b_table",
+   "fieldtype": "Table",
+   "label": "Shift B",
+   "options": "Shift B"
+  },
+  {
+   "default": "Today",
+   "fieldname": "new_from_date",
+   "fieldtype": "Date",
+   "label": "New Assignment From Date"
+  },
+  {
+   "default": "Today",
+   "fieldname": "new_to_date",
+   "fieldtype": "Date",
+   "label": "New Assignment To Date"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-11-16 19:54:53.066301",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Swap Shift",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
