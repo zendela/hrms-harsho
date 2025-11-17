@@ -374,11 +374,9 @@ scheduler_events = {
         "hrms.hr.doctype.shift_swap_auto_scheduler.shift_swap_auto_scheduler.scheduler_daily"
     ]
 }
-
-# Ship the Custom Field as a fixture so install/bench migrate adds it
-# fixtures = [
-#     {
-#         "doctype": "Custom Field",
-#         "filters": [["dt", "=", "Employee"], ["fieldname", "=", "stay_in_current_shift"]]
-#     }
-# ]
+doc_events = {
+    "Employee Advance": {
+        "validate": "hrms.hr.doctype.employee_advance.employee_advance_cap.validate",
+        "before_submit": "hrms.hr.doctype.employee_advance.employee_advance_cap.before_submit",
+    }
+}

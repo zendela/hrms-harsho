@@ -53,7 +53,11 @@
   "allow_employee_checkin_from_mobile_app",
   "allow_geolocation_tracking",
   "unlink_payment_section",
-  "unlink_payment_on_cancellation_of_employee_advance"
+  "unlink_payment_on_cancellation_of_employee_advance",
+  "advance_require_approval",
+  "column_break_roxt",
+  "advance_cap_basis",
+  "advance_cap_percent"
  ],
  "fields": [
   {
@@ -326,7 +330,7 @@
   {
    "fieldname": "unlink_payment_section",
    "fieldtype": "Section Break",
-   "label": "Unlink Payment"
+   "label": "Employee Salary Advance"
   },
   {
    "default": "0",
@@ -345,13 +349,35 @@
    "fieldname": "prevent_self_expense_approval",
    "fieldtype": "Check",
    "label": "Prevent self approval for expense claims even if user has permissions"
+  },
+  {
+   "default": "1",
+   "fieldname": "advance_require_approval",
+   "fieldtype": "Check",
+   "label": "Salary Advance Require Approval"
+  },
+  {
+   "fieldname": "column_break_roxt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "advance_cap_basis",
+   "fieldtype": "Select",
+   "label": "Calculate Salary Advance Based On",
+   "options": "Basic Pay\nGross Pay"
+  },
+  {
+   "default": "30",
+   "fieldname": "advance_cap_percent",
+   "fieldtype": "Int",
+   "label": "Salary Advance eligible percent"
   }
  ],
  "icon": "fa fa-cog",
  "idx": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-28 10:37:35.977951",
+ "modified": "2025-11-16 23:38:37.045566",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "HR Settings",

@@ -388,3 +388,34 @@ frappe.ui.form.on("Salary Detail", {
 		}
 	},
 });
+
+frappe.ui.form.on('Salary Slip', {
+  validate(frm) {
+    const mode = (frm.doc.mode_of_payment || '').trim();
+    if (mode === 'Bank' || mode === 'Cheque') {
+      // prefer slip snapshot; fall back to employee if blank
+      const need = [];
+      const bank_name = frm.doc.bank_name || '';
+      const bank_ac_no = frm.doc.bank_account_no || frm.doc.bank_ac_no || '';
+      if (!bank_name) need.push(__('Bank Name'));
+      if (!bank_ac_no) need.push(__('Account No'));
+      if (need.length) {
+        frappe.throw(__('For {0} payment, please fill: {1}', [mode, need.join(', ')]));
+      }
+    }
+  },
+
+  // When employee chosen, pull mode + bank snapshot for convenience
+  employee(frm) {
+    if (!frm.doc.employee) return;
+    frappe.db.get_value('Employee', frm.doc.employee,
+      ['salary_mode','bank_name','bank_branch','bank_account_no','bank_ac_no'], r => {
+        if (!r) return;
+        if (r.salary_mode) frm.set_value('mode_of_payment', r.salary_mode);
+        if (!frm.doc.bank_name && r.bank_name) frm.set_value('bank_name', r.bank_name);
+        if (!frm.doc.bank_branch && r.bank_branch) frm.set_value('bank_branch', r.bank_branch);
+        const ac = r.bank_account_no || r.bank_ac_no;
+        if (!frm.doc.bank_account_no && ac) frm.set_value('bank_account_no', ac);
+      });
+  }
+});

@@ -20,6 +20,10 @@
   "exchange_rate",
   "section_break_8",
   "purpose",
+  "eligible_amount",
+  "cap_basis",
+  "cap_percent",
+  "cap_source_note",
   "column_break_11",
   "advance_amount",
   "paid_amount",
@@ -85,7 +89,7 @@
   },
   {
    "fieldname": "purpose",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Purpose",
    "reqd": 1
@@ -236,12 +240,36 @@
   {
    "fieldname": "column_break_crso",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "eligible_amount",
+   "fieldtype": "Currency",
+   "label": "Eligible Amount",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cap_basis",
+   "fieldtype": "Data",
+   "label": "Calculated Based On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cap_percent",
+   "fieldtype": "Int",
+   "label": "Calculated Percent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cap_source_note",
+   "fieldtype": "Small Text",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-16 12:09:38.685483",
+ "modified": "2025-11-16 23:53:22.372831",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",
@@ -275,6 +303,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "employee,employee_name",
  "sort_field": "creation",
  "sort_order": "DESC",

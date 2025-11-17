@@ -98,6 +98,7 @@ frappe.ui.form.on("Employee Advance", {
 		}
 	},
 
+	
 	make_deduction_via_additional_salary: function (frm) {
 		frappe.call({
 			method: "hrms.hr.doctype.employee_advance.employee_advance.create_return_through_additional_salary",
@@ -223,4 +224,56 @@ frappe.ui.form.on("Employee Advance", {
 			},
 		});
 	},
+});
+
+
+frappe.ui.form.on('Employee Advance', {
+  employee: refresh_cap,
+  posting_date: refresh_cap,
+  refresh(frm) { refresh_cap(frm); }
+});
+
+function refresh_cap(frm) {
+  if (!frm.doc.employee) return;
+  frappe.call({
+    method: 'hrms.hr.doctype.employee_advance.employee_advance_cap.compute_advance_cap',
+    args: { employee: frm.doc.employee, posting_date: frm.doc.posting_date },
+  }).then(r => {
+    const m = r.message || {};
+    frm.set_value('eligible_amount', m.cap_amount || 0);
+    frm.set_value('cap_basis', m.basis || '');
+    frm.set_value('cap_percent', m.percent || 0);
+    frm.set_value('cap_source_note', m.note || '');
+  });
+}
+frappe.ui.form.on('Employee Advance', {
+  refresh(frm) {
+    // Show only for submitted docs
+    if (frm.doc.docstatus === 1) {
+      frm.add_custom_button(__('Refresh Payment Status'), () => {
+        frappe.call({
+          method: 'hrms.hr.doctype.employee_advance.employee_advance_reconcile.refresh_payments',
+          args: { advance: frm.doc.name },
+          freeze: true,
+          freeze_message: __('Recalculating payment status...')
+        }).then(r => {
+          const m = r.message || {};
+          frm.reload_doc().then(() => {
+            frappe.msgprint({
+              title: __('Payment Status Updated'),
+              message: __(
+                'Status: <b>{0}</b><br>Paid: <b>{1}</b><br>Outstanding: <b>{2}</b>',
+                [
+                  frm.doc.status || m.status || '-',
+                  frappe.format((frm.doc.paid_amount ?? m.paid_amount ?? 0), {fieldtype:'Currency', options: frm.doc.currency}),
+                  frappe.format((frm.doc.outstanding_amount ?? m.outstanding_amount ?? 0), {fieldtype:'Currency', options: frm.doc.currency})
+                ]
+              ),
+              indicator: (frm.doc.status === 'Paid' ? 'green' : 'orange')
+            });
+          });
+        });
+      }).addClass('btn-primary');
+    }
+  }
 });
