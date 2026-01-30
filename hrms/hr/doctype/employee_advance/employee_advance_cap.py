@@ -23,8 +23,8 @@ def _active_base_from_ssa(employee, on_date):
     if row and row.base:
         return float(row.base), f"Base from SSA (from {frappe.format(row.from_date, {'fieldtype':'Date'})})"
     # fallback to Employee.base (if you store it) or 0
-    base = frappe.db.get_value("Employee", employee, "base") or 0
-    return float(base), "Base from Employee.base"
+    base = frappe.db.get_value("Employee", employee, "ctc") or 0
+    return float(base), "Base from Employee Basic"
 
 def _last_gross(employee, on_date):
     # Last approved Salary Slip up to on_date
