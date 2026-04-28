@@ -1,0 +1,180 @@
+% Harsho Group — Payroll Manual LaTeX Template
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{mdframed}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{amssymb}
+
+% Page geometry
+\geometry{
+  a4paper,
+  top=2.8cm,
+  bottom=2.8cm,
+  left=2.5cm,
+  right=2.5cm,
+  headheight=2cm,
+  headsep=0.5cm,
+  footskip=1.2cm
+}
+
+% Fonts
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% Brand colours
+\definecolor{harshoRed}{RGB}{220,30,30}
+\definecolor{harshoBlue}{RGB}{0,140,190}
+\definecolor{harshoLightBlue}{RGB}{230,245,252}
+\definecolor{harshoGray}{RGB}{80,80,80}
+\definecolor{harshoLightGray}{RGB}{245,245,245}
+\definecolor{warningAmber}{RGB}{255,193,7}
+\definecolor{successGreen}{RGB}{40,167,69}
+\definecolor{tableHeader}{RGB}{0,140,190}
+
+% Hyperlinks
+\hypersetup{
+  colorlinks=true,
+  linkcolor=harshoBlue,
+  urlcolor=harshoBlue,
+  pdfauthor={Harsho Group},
+  pdftitle={Tanzania Payroll User Manual},
+  pdfsubject={Payroll Operations Guide}
+}
+
+% Section formatting
+\titleformat{\section}
+  {\sffamily\Large\bfseries\color{harshoBlue}}
+  {\thesection}{1em}{}
+  [\color{harshoBlue}\titlerule]
+
+\titleformat{\subsection}
+  {\sffamily\large\bfseries\color{harshoRed}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\sffamily\normalsize\bfseries\color{harshoGray}}
+  {\thesubsubsection}{1em}{}
+
+\titlespacing{\section}{0pt}{18pt}{8pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\includegraphics[height=1.4cm]{harsho_logo.png}}
+\fancyhead[C]{\sffamily\small\color{harshoGray}Tanzania Payroll User Manual}
+\fancyhead[R]{\sffamily\small\color{harshoGray}Harsho Group}
+\fancyfoot[L]{\sffamily\footnotesize\color{harshoGray}Confidential — Internal Use Only}
+\fancyfoot[C]{\sffamily\footnotesize\color{harshoGray}\thepage}
+\fancyfoot[R]{\sffamily\footnotesize\color{harshoGray}April 2026}
+
+% Warning box
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{warningbox}{
+  colback=warningAmber!15,
+  colframe=warningAmber!80!black,
+  fonttitle=\sffamily\bfseries,
+  title={⚠\space Warning},
+  breakable
+}
+\newtcolorbox{successbox}{
+  colback=successGreen!10,
+  colframe=successGreen!70!black,
+  fonttitle=\sffamily\bfseries,
+  title={✓\space Done},
+  breakable
+}
+\newtcolorbox{infobox}{
+  colback=harshoLightBlue,
+  colframe=harshoBlue,
+  fonttitle=\sffamily\bfseries,
+  breakable
+}
+
+% Table styling
+\renewcommand{\arraystretch}{1.4}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% List styling
+\setlist[itemize]{leftmargin=1.5em, itemsep=2pt, topsep=4pt}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=3pt, topsep=4pt}
+
+% Pandoc variables
+\providecommand{\tightlist}{\setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}}
+
+\begin{document}
+
+% ── Cover Page ──────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \thispagestyle{empty}
+  \pagecolor{harshoBlue}
+  \color{white}
+
+  \vspace*{2cm}
+  \begin{center}
+    \includegraphics[width=5cm]{harsho_logo.png}\\[1.5cm]
+
+    {\fontsize{32}{38}\sffamily\bfseries Tanzania Payroll}\\[0.4cm]
+    {\fontsize{28}{34}\sffamily\bfseries User Manual}\\[1cm]
+
+    \textcolor{warningAmber}{\rule{10cm}{2pt}}\\[1cm]
+
+    {\large\sffamily Step-by-Step Guide for HR and Finance Staff}\\[0.5cm]
+    {\normalsize\sffamily ERPNext + Frappe HRMS \textperiodcentered{} Currency: TZS}\\[2cm]
+
+    \textcolor{warningAmber}{\rule{10cm}{2pt}}\\[1cm]
+
+    {\large\sffamily\bfseries Harsho Group}\\[0.3cm]
+    {\normalsize\sffamily April 2026}\\[0.5cm]
+    {\small\sffamily\textit{Confidential — Internal Use Only}}
+  \end{center}
+  \vfill
+\end{titlepage}
+
+\nopagecolor
+\color{black}
+
+% ── How to read this manual ─────────────────────────────────────────────────
+\newpage
+\thispagestyle{fancy}
+
+\begin{infobox}
+\textbf{How to read this manual}\\[4pt]
+\begin{itemize}
+  \item Steps are numbered. Do them in order.
+  \item Text in \textbf{bold} is a button or field name you will click or fill in.
+  \item Text in \texttt{monospace} is an exact value to type.
+  \item ⚠ Warning boxes mean stop and pay attention before continuing.
+  \item ✓ Done boxes confirm you have completed a step correctly.
+\end{itemize}
+\end{infobox}
+
+\vspace{1em}
+\tableofcontents
+\newpage
+
+% ── Body (injected by pandoc) ────────────────────────────────────────────────
+$body$
+
+\end{document}
