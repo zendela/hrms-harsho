@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Tanzania NSSF Report"] = {
+frappe.query_reports["Tanzania NHIF Report"] = {
 	filters: [
 		{
 			fieldname: "payroll_month",
@@ -19,13 +19,12 @@ frappe.query_reports["Tanzania NSSF Report"] = {
 			default: frappe.defaults.get_user_default("Company"),
 		},
 		{
-			fieldname: "nssf_employee_component",
-			label: __("NSSF Employee Component"),
+			fieldname: "nhif_component",
+			label: __("NHIF Salary Component"),
 			fieldtype: "Link",
 			options: "Salary Component",
 			reqd: 1,
-			default: "NSSF Employee",
+			default: "NHIF",
 		},
-
 	],
 };
