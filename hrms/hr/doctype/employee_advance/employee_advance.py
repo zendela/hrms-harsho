@@ -6,7 +6,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder.functions import Abs, Sum
-from frappe.utils import flt, get_link_to_form, nowdate
+from frappe.utils import flt, get_first_day, get_last_day, get_link_to_form, getdate, nowdate
 
 import erpnext
 from erpnext.accounts.doctype.journal_entry.journal_entry import get_default_bank_cash_account
@@ -29,8 +29,35 @@ class EmployeeAdvance(Document):
 		validate_active_employee(self.employee)
 		self.validate_exchange_rate()
 		self.validate_advance_account_type()
+		self.validate_one_advance_per_month()
 		self.set_status()
 		self.set_pending_amount()
+
+	def validate_one_advance_per_month(self):
+		if not self.payroll_month:
+			return
+
+		month_start = get_first_day(getdate(self.payroll_month))
+		month_end = get_last_day(getdate(self.payroll_month))
+
+		filters = {
+			"employee": self.employee,
+			"payroll_month": ["between", [month_start, month_end]],
+			"docstatus": ["!=", 2],
+		}
+		if not self.is_new():
+			filters["name"] = ["!=", self.name]
+
+		existing = frappe.db.get_value("Employee Advance", filters, "name")
+		if existing:
+			frappe.throw(
+				_("An advance already exists for employee {0} for the payroll month {1}: {2}").format(
+					frappe.bold(self.employee),
+					frappe.bold(month_start.strftime("%B %Y")),
+					get_link_to_form("Employee Advance", existing),
+				),
+				title=_("Duplicate Advance"),
+			)
 
 	def before_submit(self):
 		if not self.get("advance_account"):
@@ -248,7 +275,7 @@ def make_bank_entry(dt, dn):
 	je.posting_date = nowdate()
 	je.voucher_type = "Bank Entry"
 	je.company = doc.company
-	je.remark = "Payment against Employee Advance: " + dn + "\n" + doc.purpose
+	je.remark = "Payment against Employee Advance: " + dn
 	je.multi_currency = 1 if advance_account_currency != payment_account.account_currency else 0
 
 	je.append(

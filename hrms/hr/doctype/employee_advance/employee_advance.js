@@ -42,6 +42,10 @@ frappe.ui.form.on("Employee Advance", {
 	},
 
 	refresh: function (frm) {
+		if (frm.doc.__islocal) {
+			frm.trigger("set_payroll_month");
+		}
+
 		if (
 			frm.doc.docstatus === 1 &&
 			flt(frm.doc.paid_amount) < flt(frm.doc.advance_amount) &&
@@ -173,6 +177,23 @@ frappe.ui.form.on("Employee Advance", {
 		if (frm.doc.employee) frm.trigger("get_employee_currency");
 	},
 
+	posting_date: function (frm) {
+		frm.trigger("set_payroll_month");
+	},
+
+	set_payroll_month: function (frm) {
+		if (frm.doc.posting_date) {
+			// Default payroll_month to the first day of the posting_date month
+			const d = frappe.datetime.str_to_obj(frm.doc.posting_date);
+			const first_day = frappe.datetime.obj_to_str(
+				new Date(d.getFullYear(), d.getMonth(), 1)
+			);
+			if (!frm.doc.payroll_month) {
+				frm.set_value("payroll_month", first_day);
+			}
+		}
+	},
+
 	get_employee_currency: function (frm) {
 		frappe.db.get_value(
 			"Salary Structure Assignment",
@@ -244,6 +265,8 @@ function refresh_cap(frm) {
     frm.set_value('cap_basis', m.basis || '');
     frm.set_value('cap_percent', m.percent || 0);
     frm.set_value('cap_source_note', m.note || '');
+    // Auto-populate requested amount from eligible amount
+    frm.set_value('advance_amount', m.cap_amount || 0);
   });
 }
 frappe.ui.form.on('Employee Advance', {

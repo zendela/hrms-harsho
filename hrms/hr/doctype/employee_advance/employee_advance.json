@@ -12,6 +12,7 @@
   "employee_name",
   "column_break_4",
   "posting_date",
+  "payroll_month",
   "company",
   "department",
   "currency_section",
@@ -19,7 +20,6 @@
   "column_break_crso",
   "exchange_rate",
   "section_break_8",
-  "purpose",
   "eligible_amount",
   "cap_basis",
   "cap_percent",
@@ -75,6 +75,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "payroll_month",
+   "fieldtype": "Date",
+   "label": "Payroll Month",
+   "reqd": 1,
+   "description": "Month this advance will be deducted from (first day of the month)"
+  },
+  {
    "fetch_from": "employee.department",
    "fieldname": "department",
    "fieldtype": "Link",
@@ -85,14 +92,7 @@
   {
    "fieldname": "section_break_8",
    "fieldtype": "Section Break",
-   "label": "Purpose & Amount"
-  },
-  {
-   "fieldname": "purpose",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Purpose",
-   "reqd": 1
+   "label": "Amount"
   },
   {
    "fieldname": "column_break_11",
@@ -269,7 +269,7 @@
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-16 23:53:22.372831",
+ "modified": "2026-04-28 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Advance",

@@ -1,0 +1,13 @@
+{
+ "doctype": "Report",
+ "is_standard": "Yes",
+ "module": "HR",
+ "name": "Employee Advance Disbursement",
+ "ref_doctype": "Employee Advance",
+ "report_type": "Script Report",
+ "roles": [
+  {"role": "HR Manager"},
+  {"role": "HR User"},
+  {"role": "Expense Approver"}
+ ]
+}
