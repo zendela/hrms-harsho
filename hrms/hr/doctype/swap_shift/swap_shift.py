@@ -147,7 +147,18 @@ def _preview_swap(from_shift, to_shift, fetch_fd, fetch_td, respect_stay_flag: i
     A_swap = filter_swap(A_emp)
     B_swap = filter_swap(B_emp)
 
-    stayed = [e for e in sorted(A_emp | B_emp) if must_stay(e)] if respect_stay_flag else []
+    # Build stayed list with original_shift so _execute_swap can re-assign them
+    # in the creation window without changing their shift.
+    stayed = []
+    if respect_stay_flag:
+        for e in sorted(A_emp | B_emp):
+            if must_stay(e):
+                original_shift = from_shift if e in A_emp else to_shift
+                stayed.append({
+                    "employee": e,
+                    "employee_name": info.get(e, {}).get("employee_name"),
+                    "original_shift": original_shift,
+                })
 
     a_to_b = [{"employee": e, "employee_name": info.get(e, {}).get("employee_name")} for e in A_swap]
     b_to_a = [{"employee": e, "employee_name": info.get(e, {}).get("employee_name")} for e in B_swap]
@@ -232,6 +243,11 @@ def _execute_swap(from_shift, to_shift,
         _create(e, to_shift)
     for e in B_swap:
         _create(e, from_shift)
+
+    # Stayed employees are not swapped, but they still need a Shift Assignment
+    # for the creation window (which may differ from the fetch window).
+    for s in prev["stayed"]:
+        _create(s["employee"], s["original_shift"])
 
     return {
         "meta": {
