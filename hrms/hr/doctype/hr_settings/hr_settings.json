@@ -57,7 +57,8 @@
   "advance_require_approval",
   "column_break_roxt",
   "advance_cap_basis",
-  "advance_cap_percent"
+  "advance_cap_percent",
+  "advance_deduction_component"
  ],
  "fields": [
   {
@@ -371,6 +372,13 @@
    "fieldname": "advance_cap_percent",
    "fieldtype": "Int",
    "label": "Salary Advance eligible percent"
+  },
+  {
+   "fieldname": "advance_deduction_component",
+   "fieldtype": "Link",
+   "label": "Advance Deduction Salary Component",
+   "options": "Salary Component",
+   "description": "Deduction component used to recover paid advances from payroll"
   }
  ],
  "icon": "fa fa-cog",

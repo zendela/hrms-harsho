@@ -208,6 +208,55 @@ class EmployeeAdvance(Document):
 		self.db_set("return_amount", return_amount)
 		self.set_status(update=True)
 
+		# Auto-create payroll deduction entry when advance becomes fully paid
+		self.reload()
+		if self.status == "Paid":
+			self.create_advance_deduction_entry()
+
+	def create_advance_deduction_entry(self):
+		"""
+		Create a submitted Additional Salary (Deduction) so the advance amount
+		is recovered from the employee's payroll for the configured payroll_month.
+		Skips silently if:
+		  - advance_deduction_component is not set in HR Settings
+		  - payroll_month is not set on this advance
+		  - an Additional Salary already exists for this advance
+		"""
+		salary_component = frappe.db.get_single_value(
+			"HR Settings", "advance_deduction_component"
+		)
+		if not salary_component:
+			return
+
+		if not self.get("payroll_month"):
+			return
+
+		# Idempotency: skip if already created
+		existing = frappe.db.exists(
+			"Additional Salary",
+			{
+				"ref_doctype": "Employee Advance",
+				"ref_docname": self.name,
+				"docstatus": ["!=", 2],
+			},
+		)
+		if existing:
+			return
+
+		additional_salary = frappe.new_doc("Additional Salary")
+		additional_salary.employee         = self.employee
+		additional_salary.company          = self.company
+		additional_salary.currency         = self.currency
+		additional_salary.salary_component = salary_component
+		additional_salary.amount           = flt(self.advance_amount)
+		additional_salary.payroll_date     = getdate(self.payroll_month)
+		additional_salary.ref_doctype      = "Employee Advance"
+		additional_salary.ref_docname      = self.name
+		additional_salary.overwrite_salary_structure_amount = 0
+
+		additional_salary.insert(ignore_permissions=True)
+		additional_salary.submit()
+
 	def update_claimed_amount(self):
 		claimed_amount = (
 			frappe.db.sql(
