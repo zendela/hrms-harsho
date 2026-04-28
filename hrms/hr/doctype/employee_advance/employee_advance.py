@@ -428,3 +428,122 @@ def get_voucher_type(mode_of_payment=None):
 			voucher_type = "Bank Entry"
 
 	return voucher_type
+
+
+@frappe.whitelist()
+def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
+	"""
+	Create a single Payment Entry covering all selected Unpaid advances.
+	All advances must belong to the same company and use the same currency.
+	Returns the submitted Payment Entry name.
+	"""
+	import json
+
+	if isinstance(advance_names, str):
+		advance_names = json.loads(advance_names)
+
+	if not advance_names:
+		frappe.throw(_("No advances selected."))
+
+	advances = frappe.get_all(
+		"Employee Advance",
+		filters={"name": ["in", advance_names], "docstatus": 1, "status": "Unpaid"},
+		fields=[
+			"name", "employee", "employee_name", "company", "currency",
+			"advance_amount", "paid_amount", "exchange_rate", "advance_account",
+		],
+	)
+
+	if not advances:
+		frappe.throw(_("No submitted Unpaid advances found in the selection."))
+
+	# All advances must share the same company and currency
+	companies  = {a.company for a in advances}
+	currencies = {a.currency for a in advances}
+	if len(companies) > 1:
+		frappe.throw(
+			_("All selected advances must belong to the same company. Found: {0}").format(
+				", ".join(companies)
+			)
+		)
+	if len(currencies) > 1:
+		frappe.throw(
+			_("All selected advances must use the same currency. Found: {0}").format(
+				", ".join(currencies)
+			)
+		)
+
+	company  = companies.pop()
+	currency = currencies.pop()
+
+	# Resolve payment account
+	payment_account = get_default_bank_cash_account(
+		company, account_type="Cash", mode_of_payment=mode_of_payment
+	)
+	if bank_account:
+		payment_account = frappe._dict(
+			frappe.db.get_value(
+				"Bank Account", bank_account,
+				["account", "account_currency"],
+				as_dict=True,
+			) or {}
+		)
+	if not payment_account or not payment_account.get("account"):
+		frappe.throw(
+			_("Please set a Default Cash Account in Company defaults or pass a bank_account.")
+		)
+
+	company_currency = erpnext.get_company_currency(company)
+	advance_account  = advances[0].advance_account or frappe.db.get_value(
+		"Company", company, "default_employee_advance_account"
+	)
+	if not advance_account:
+		frappe.throw(
+			_("No Advance Account found. Set the Default Employee Advance Account on the Company.")
+		)
+
+	from erpnext.accounts.utils import get_account_currency
+	advance_account_currency = get_account_currency(advance_account)
+
+	pe = frappe.new_doc("Payment Entry")
+	pe.payment_type               = "Pay"
+	pe.company                    = company
+	pe.posting_date               = nowdate()
+	pe.mode_of_payment            = mode_of_payment
+	pe.party_type                 = "Employee"
+	pe.paid_from                  = payment_account.account
+	pe.paid_to                    = advance_account
+	pe.paid_from_account_currency = payment_account.get("account_currency") or company_currency
+	pe.paid_to_account_currency   = advance_account_currency
+
+	total_outstanding = 0.0
+
+	for adv in advances:
+		outstanding = flt(adv.advance_amount) - flt(adv.paid_amount)
+		if advance_account_currency != adv.currency:
+			outstanding = outstanding * flt(adv.exchange_rate)
+
+		pe.append(
+			"references",
+			{
+				"reference_doctype": "Employee Advance",
+				"reference_name":    adv.name,
+				"total_amount":      flt(adv.advance_amount),
+				"outstanding_amount": outstanding,
+				"allocated_amount":  outstanding,
+			},
+		)
+		total_outstanding += outstanding
+
+	pe.paid_amount     = total_outstanding
+	pe.received_amount = total_outstanding
+
+	pe.setup_party_account_field()
+	pe.set_missing_values()
+	pe.set_missing_ref_details()
+	pe.set_amounts()
+
+	pe.insert(ignore_permissions=True)
+	pe.submit()
+
+	return pe.name
