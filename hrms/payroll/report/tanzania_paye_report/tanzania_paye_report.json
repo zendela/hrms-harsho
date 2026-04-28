@@ -1,0 +1,13 @@
+{
+ "doctype": "Report",
+ "is_standard": "Yes",
+ "module": "Payroll",
+ "name": "Tanzania PAYE Report",
+ "ref_doctype": "Salary Slip",
+ "report_type": "Script Report",
+ "roles": [
+  {"role": "HR Manager"},
+  {"role": "Accounts Manager"},
+  {"role": "Accounts User"}
+ ]
+}
