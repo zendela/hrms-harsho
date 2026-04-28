@@ -73,7 +73,7 @@ def get_data(filters):
 		"""
 		SELECT
 			ea.employee_name,
-			emp.bank_name   AS bank_code,
+			COALESCE(NULLIF(emp.bank_code, ''), emp.bank_name) AS bank_code,
 			emp.bank_ac_no  AS bank_account,
 			ea.advance_amount AS amount
 		FROM `tabEmployee Advance` ea
