@@ -380,3 +380,10 @@ doc_events = {
         "before_submit": "hrms.hr.doctype.employee_advance.employee_advance_cap.before_submit",
     }
 }
+
+fixtures = [
+    {
+        "doctype": "Workflow",
+        "filters": [["name", "=", "Employee Advance Approval"]],
+    }
+]

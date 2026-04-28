@@ -38,6 +38,7 @@
   "repay_unclaimed_amount_from_salary",
   "more_info_section",
   "status",
+  "workflow_state",
   "column_break_kimx",
   "amended_from"
  ],
@@ -136,6 +137,15 @@
    "label": "Status",
    "no_copy": 1,
    "options": "Draft\nPaid\nUnpaid\nClaimed\nReturned\nPartly Claimed and Returned\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "no_copy": 1,
+   "options": "Workflow State",
+   "print_hide": 1,
    "read_only": 1
   },
   {
