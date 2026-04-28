@@ -6,6 +6,13 @@ from frappe import _
 from frappe.utils import flt, get_first_day, get_last_day, getdate
 
 
+def _build_reference(company, payroll_month):
+	"""Generate reference label: COMPANY SALARY ADVANCE MONTH YEAR"""
+	d = getdate(payroll_month)
+	month_name = d.strftime("%B").upper()
+	return f"{company.upper()} SALARY ADVANCE {month_name} {d.year}"
+
+
 def execute(filters=None):
 	filters = filters or {}
 	columns = get_columns()
@@ -51,10 +58,11 @@ def get_columns():
 def get_data(filters):
 	payroll_month = filters.get("payroll_month")
 	company = filters.get("company")
-	reference = filters.get("reference") or ""
 
 	if not payroll_month:
 		frappe.throw(_("Payroll Month is required"))
+
+	reference = filters.get("reference") or _build_reference(company, payroll_month)
 
 	month_start = get_first_day(getdate(payroll_month))
 	month_end = get_last_day(getdate(payroll_month))

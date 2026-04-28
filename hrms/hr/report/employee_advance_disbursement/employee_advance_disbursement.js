@@ -22,7 +22,35 @@ frappe.query_reports["Employee Advance Disbursement"] = {
 			fieldname: "reference",
 			label: __("Reference"),
 			fieldtype: "Data",
-			description: __("Payment batch label printed in the Reference column (e.g. HMC SALARY MARCH 2026)"),
+			description: __("Auto-generated from company + payroll month. Edit to override."),
 		},
 	],
+
+	onload: function (report) {
+		// Set initial value after filters have rendered
+		setTimeout(() => _set_reference(), 300);
+
+		// Regenerate whenever company or payroll_month changes
+		report.page.wrapper.on(
+			"change",
+			"[data-fieldname='company'] input, [data-fieldname='payroll_month'] input",
+			() => _set_reference(),
+		);
+	},
 };
+
+function _set_reference() {
+	const company = frappe.query_report.get_filter_value("company");
+	const payroll_month = frappe.query_report.get_filter_value("payroll_month");
+
+	if (!company || !payroll_month) return;
+
+	const d = frappe.datetime.str_to_obj(payroll_month);
+	const month_name = d.toLocaleString("en-US", { month: "long" }).toUpperCase();
+	const year = d.getFullYear();
+
+	frappe.query_report.set_filter_value(
+		"reference",
+		`${company.toUpperCase()} SALARY ADVANCE ${month_name} ${year}`,
+	);
+}
