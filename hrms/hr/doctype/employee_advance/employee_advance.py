@@ -530,13 +530,13 @@ def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
 		company, account_type="Cash", mode_of_payment=mode_of_payment
 	)
 	if bank_account:
-		payment_account = frappe._dict(
-			frappe.db.get_value(
-				"Bank Account", bank_account,
-				["account", "account_currency"],
-				as_dict=True,
-			) or {}
-		)
+		gl_account = frappe.db.get_value("Bank Account", bank_account, "account")
+		if gl_account:
+			from erpnext.accounts.utils import get_account_currency
+			payment_account = frappe._dict({
+				"account": gl_account,
+				"account_currency": get_account_currency(gl_account),
+			})
 	if not payment_account or not payment_account.get("account"):
 		frappe.throw(
 			_("Please set a Default Cash Account in Company defaults or pass a bank_account.")
