@@ -67,11 +67,12 @@ frappe.listview_settings["Employee Advance"] = {
 							bank_account: values.bank_account || null,
 						},
 						callback(r) {
-							if (r.message) {
+							if (r.message && r.message.length) {
+								const count = r.message.length;
 								frappe.show_alert({
 									message: __(
-										"Payment Entry {0} created and submitted.",
-										[`<a href="/app/payment-entry/${r.message}">${r.message}</a>`]
+										"{0} Payment {1} created and submitted.",
+										[count, count === 1 ? "Entry" : "Entries"]
 									),
 									indicator: "green",
 								});

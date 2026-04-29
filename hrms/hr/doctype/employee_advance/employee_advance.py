@@ -554,45 +554,56 @@ def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
 	from erpnext.accounts.utils import get_account_currency
 	advance_account_currency = get_account_currency(advance_account)
 
-	pe = frappe.new_doc("Payment Entry")
-	pe.payment_type               = "Pay"
-	pe.company                    = company
-	pe.posting_date               = nowdate()
-	pe.mode_of_payment            = mode_of_payment
-	pe.party_type                 = "Employee"
-	pe.paid_from                  = payment_account.account
-	pe.paid_to                    = advance_account
-	pe.paid_from_account_currency = payment_account.get("account_currency") or company_currency
-	pe.paid_to_account_currency   = advance_account_currency
+	# Payment Entry requires a single party — create one PE per employee
+	# so each entry has the correct party set.
+	from itertools import groupby
+	advances_sorted = sorted(advances, key=lambda a: a.employee)
 
-	total_outstanding = 0.0
+	created = []
+	for employee, emp_advances in groupby(advances_sorted, key=lambda a: a.employee):
+		emp_advances = list(emp_advances)
 
-	for adv in advances:
-		outstanding = flt(adv.advance_amount) - flt(adv.paid_amount)
-		if advance_account_currency != adv.currency:
-			outstanding = outstanding * flt(adv.exchange_rate)
+		pe = frappe.new_doc("Payment Entry")
+		pe.payment_type               = "Pay"
+		pe.company                    = company
+		pe.posting_date               = nowdate()
+		pe.mode_of_payment            = mode_of_payment
+		pe.party_type                 = "Employee"
+		pe.party                      = employee
+		pe.paid_from                  = payment_account.account
+		pe.paid_to                    = advance_account
+		pe.paid_from_account_currency = payment_account.get("account_currency") or company_currency
+		pe.paid_to_account_currency   = advance_account_currency
 
-		pe.append(
-			"references",
-			{
-				"reference_doctype": "Employee Advance",
-				"reference_name":    adv.name,
-				"total_amount":      flt(adv.advance_amount),
-				"outstanding_amount": outstanding,
-				"allocated_amount":  outstanding,
-			},
-		)
-		total_outstanding += outstanding
+		total_outstanding = 0.0
 
-	pe.paid_amount     = total_outstanding
-	pe.received_amount = total_outstanding
+		for adv in emp_advances:
+			outstanding = flt(adv.advance_amount) - flt(adv.paid_amount)
+			if advance_account_currency != adv.currency:
+				outstanding = outstanding * flt(adv.exchange_rate)
 
-	pe.setup_party_account_field()
-	pe.set_missing_values()
-	pe.set_missing_ref_details()
-	pe.set_amounts()
+			pe.append(
+				"references",
+				{
+					"reference_doctype":  "Employee Advance",
+					"reference_name":     adv.name,
+					"total_amount":       flt(adv.advance_amount),
+					"outstanding_amount": outstanding,
+					"allocated_amount":   outstanding,
+				},
+			)
+			total_outstanding += outstanding
 
-	pe.insert(ignore_permissions=True)
-	pe.submit()
+		pe.paid_amount     = total_outstanding
+		pe.received_amount = total_outstanding
 
-	return pe.name
+		pe.setup_party_account_field()
+		pe.set_missing_values()
+		pe.set_missing_ref_details()
+		pe.set_amounts()
+
+		pe.insert(ignore_permissions=True)
+		pe.submit()
+		created.append(pe.name)
+
+	return created
