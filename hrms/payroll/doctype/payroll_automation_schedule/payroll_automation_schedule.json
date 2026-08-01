@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "autoname": "field:schedule_name",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schedule_name",
+  "enabled",
+  "template_payroll_entry",
+  "payroll_frequency",
+  "next_period_start",
+  "require_approval",
+  "auto_get_employees",
+  "notification_email",
+  "last_payroll_entry",
+  "last_run_on",
+  "last_success_on",
+  "consecutive_failures",
+  "last_error"
+ ],
+ "fields": [
+  {"fieldname": "schedule_name", "fieldtype": "Data", "label": "Schedule Name", "reqd": 1, "unique": 1},
+  {"default": "1", "fieldname": "enabled", "fieldtype": "Check", "label": "Enabled"},
+  {"description": "A saved draft used for company, accounts, filters and accounting dimensions.", "fieldname": "template_payroll_entry", "fieldtype": "Link", "label": "Template Payroll Entry", "options": "Payroll Entry", "reqd": 1},
+  {"fieldname": "payroll_frequency", "fieldtype": "Select", "label": "Payroll Frequency", "options": "Weekly\nFortnightly\nBimonthly\nMonthly", "reqd": 1},
+  {"fieldname": "next_period_start", "fieldtype": "Date", "in_list_view": 1, "label": "Next Period Start", "reqd": 1},
+  {"default": "1", "fieldname": "require_approval", "fieldtype": "Check", "label": "Require Approval"},
+  {"default": "1", "fieldname": "auto_get_employees", "fieldtype": "Check", "label": "Automatically Get Employees"},
+  {"fieldname": "notification_email", "fieldtype": "Data", "label": "Notification Email", "options": "Email"},
+  {"fieldname": "last_payroll_entry", "fieldtype": "Link", "label": "Last Payroll Entry", "options": "Payroll Entry", "read_only": 1},
+  {"fieldname": "last_run_on", "fieldtype": "Datetime", "label": "Last Run On", "read_only": 1},
+  {"fieldname": "last_success_on", "fieldtype": "Datetime", "label": "Last Success On", "read_only": 1},
+  {"default": "0", "fieldname": "consecutive_failures", "fieldtype": "Int", "label": "Consecutive Failures", "read_only": 1},
+  {"fieldname": "last_error", "fieldtype": "Small Text", "label": "Last Error", "read_only": 1}
+ ],
+ "links": [],
+ "module": "Payroll",
+ "name": "Payroll Automation Schedule",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "print": 1, "read": 1, "report": 1, "role": "Payroll Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "print": 1, "read": 1, "report": 1, "role": "HR Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

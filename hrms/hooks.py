@@ -230,6 +230,8 @@ scheduler_events = {
 		"hrms.hr.doctype.shift_schedule_assignment.shift_schedule_assignment.process_auto_shift_creation",
 	],
 	"daily": [
+		"hrms.hr.doctype.shift_swap_auto_scheduler.shift_swap_auto_scheduler.scheduler_daily",
+		"hrms.payroll.doctype.payroll_automation_schedule.payroll_automation_schedule.create_due_payroll_entries",
 		"hrms.controllers.employee_reminders.send_birthday_reminders",
 		"hrms.controllers.employee_reminders.send_work_anniversary_reminders",
 		"hrms.hr.doctype.daily_work_summary_group.daily_work_summary_group.send_summary",
@@ -369,18 +371,12 @@ company_data_to_be_ignored = [
 ]
 # override_whitelisted_methods = {"hrms.hr.utils.shift_swap"}
 
-scheduler_events = {
-    "daily": [
-        "hrms.hr.doctype.shift_swap_auto_scheduler.shift_swap_auto_scheduler.scheduler_daily"
-    ]
-}
 doc_events = {
     "Employee Advance": {
         "validate": "hrms.hr.doctype.employee_advance.employee_advance_cap.validate",
         "before_submit": "hrms.hr.doctype.employee_advance.employee_advance_cap.before_submit",
     }
 }
-
 fixtures = [
     {
         "doctype": "Workflow",

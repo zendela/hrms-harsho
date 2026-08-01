@@ -318,8 +318,8 @@ class SalarySlip(TransactionBase):
 				frappe.qb.from_(ss)
 				.select(ss.name)
 				.where(
-					(ss.start_date == self.start_date)
-					& (ss.end_date == self.end_date)
+					(ss.start_date <= self.end_date)
+					& (ss.end_date >= self.start_date)
 					& (ss.docstatus != 2)
 					& (ss.employee == self.employee)
 					& (ss.name != self.name)
@@ -1131,7 +1131,7 @@ class SalarySlip(TransactionBase):
 				days_to_add = sub_period * 6
 
 			if self.payroll_frequency == "Fortnightly":
-				days_to_add = sub_period * 13
+				days_to_add = sub_period * 14
 
 			if self.payroll_frequency == "Daily":
 				days_to_add = start_date

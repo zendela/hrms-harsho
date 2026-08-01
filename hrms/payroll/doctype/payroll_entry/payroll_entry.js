@@ -63,6 +63,28 @@ frappe.ui.form.on("Payroll Entry", {
 
 	refresh: (frm) => {
 		if (frm.doc.status === "Queued") frm.page.btn_secondary.hide();
+		if (
+			frm.doc.docstatus === 0 &&
+			frm.doc.requires_payroll_approval &&
+			frm.doc.payroll_approval_status === "Pending" &&
+			frappe.model.can_submit(frm.doctype)
+		) {
+			frm.add_custom_button(__("Approve Payroll"), () => {
+				frm.call("approve_payroll").then(() => frm.reload_doc());
+			}, __("Approval"));
+			frm.add_custom_button(__("Reject Payroll"), () => {
+				frappe.prompt(
+					[{ fieldname: "reason", fieldtype: "Small Text", label: __("Reason"), reqd: 1 }],
+					(values) => frm.call("reject_payroll", values).then(() => frm.reload_doc()),
+					__("Reject Payroll"),
+				);
+			}, __("Approval"));
+		}
+		if (frm.doc.docstatus === 1 && frm.doc.salary_slips_submitted) {
+			frm.add_custom_button(__("Prepare Payment Instructions"), () => {
+				frm.call("prepare_payment_instructions").then(() => frm.reload_doc());
+			}, __("Payment"));
+		}
 
 		if (frm.doc.docstatus === 0 && !frm.is_new()) {
 			frm.page.clear_primary_action();
@@ -327,6 +349,12 @@ frappe.ui.form.on("Payroll Entry", {
 
 	department: function (frm) {
 		frm.events.clear_employee_table(frm);
+	},
+	employment_type: function (frm) {
+		frm.events.clear_employee_table(frm);
+		if (frm.doc.employment_type === "Casual" && !frm.doc.salary_slip_based_on_timesheet) {
+			frm.set_value("validate_attendance", 1);
+		}
 	},
 	grade: function (frm) {
 		frm.events.clear_employee_table(frm);

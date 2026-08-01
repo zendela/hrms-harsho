@@ -54,7 +54,113 @@ class PayrollEntry(Document):
 
 	def validate(self):
 		self.number_of_employees = len(self.employees)
+		if self.employment_type == "Casual" and not self.salary_slip_based_on_timesheet:
+			self.validate_attendance = 1
+		self.invalidate_approval_if_changed()
 		self.set_status()
+
+	def invalidate_approval_if_changed(self):
+		if self.is_new() or not self.requires_payroll_approval or self.payroll_approval_status != "Approved":
+			return
+		material_fields = {
+			"company",
+			"payroll_frequency",
+			"start_date",
+			"end_date",
+			"branch",
+			"department",
+			"employment_type",
+			"designation",
+			"grade",
+			"employees",
+			"payroll_payable_account",
+			"cost_center",
+			"payment_account",
+		}
+		if any(self.has_value_changed(field) for field in material_fields):
+			self.payroll_approval_status = "Pending"
+			self.approved_by = None
+			self.approved_on = None
+
+	@frappe.whitelist()
+	def approve_payroll(self):
+		if not frappe.has_permission("Payroll Entry", "submit", self):
+			frappe.throw(_("You are not permitted to approve Payroll Entries."), frappe.PermissionError)
+		if not self.requires_payroll_approval:
+			frappe.throw(_("This Payroll Entry does not require approval."))
+		if self.docstatus != 0:
+			frappe.throw(_("Only draft Payroll Entries can be approved."))
+		frappe.db.set_value(
+			self.doctype,
+			self.name,
+			{
+				"payroll_approval_status": "Approved",
+				"approved_by": frappe.session.user,
+				"approved_on": frappe.utils.now(),
+				"rejection_reason": None,
+			},
+		)
+
+	@frappe.whitelist()
+	def reject_payroll(self, reason):
+		if not frappe.has_permission("Payroll Entry", "submit", self):
+			frappe.throw(_("You are not permitted to reject Payroll Entries."), frappe.PermissionError)
+		if self.docstatus != 0:
+			frappe.throw(_("Only draft Payroll Entries can be rejected."))
+		if not reason:
+			frappe.throw(_("A rejection reason is required."))
+		frappe.db.set_value(
+			self.doctype,
+			self.name,
+			{
+				"payroll_approval_status": "Rejected",
+				"approved_by": None,
+				"approved_on": None,
+				"rejection_reason": reason,
+			},
+		)
+
+	@frappe.whitelist()
+	def prepare_payment_instructions(self):
+		if not frappe.has_permission("Payroll Entry", "write", self):
+			frappe.throw(_("You are not permitted to prepare payroll payments."), frappe.PermissionError)
+		if not self.salary_slips_submitted:
+			frappe.throw(_("Submit Salary Slips before preparing payment instructions."))
+		net_pay_by_employee = dict(
+			frappe.get_all(
+				"Salary Slip",
+				filters={"payroll_entry": self.name, "docstatus": 1},
+				fields=["employee", "net_pay"],
+				as_list=True,
+			)
+		)
+		for employee in self.employees:
+			employee.net_pay = net_pay_by_employee.get(employee.employee, 0)
+			if (employee.payment_status or "Pending") == "Pending" and employee.net_pay > 0:
+				employee.payment_status = "Ready"
+				employee.payment_updated_by = frappe.session.user
+				employee.payment_updated_on = frappe.utils.now()
+		self.save(ignore_permissions=True)
+
+	@frappe.whitelist()
+	def update_employee_payment_status(self, employee, status, reference=None, failure_reason=None):
+		if not frappe.has_permission("Payroll Entry", "write", self):
+			frappe.throw(_("You are not permitted to update payroll payments."), frappe.PermissionError)
+		row = next((row for row in self.employees if row.employee == employee), None)
+		if not row:
+			frappe.throw(_("Employee {0} is not part of this Payroll Entry.").format(employee))
+		current_status = row.payment_status or "Pending"
+		validate_payment_status_transition(
+			current_status,
+			status,
+			reference or row.payment_reference,
+			failure_reason,
+		)
+		row.db_set("payment_status", status)
+		row.db_set("payment_reference", reference)
+		row.db_set("payment_failure_reason", failure_reason if status == "Failed" else None)
+		row.db_set("payment_updated_by", frappe.session.user)
+		row.db_set("payment_updated_on", frappe.utils.now())
 
 	def set_status(self, status=None, update=False):
 		if not status:
@@ -66,6 +172,8 @@ class PayrollEntry(Document):
 			self.status = status
 
 	def before_submit(self):
+		if self.requires_payroll_approval and self.payroll_approval_status != "Approved":
+			frappe.throw(_("Payroll Entry must be approved before submission."), title=_("Approval Required"))
 		self.validate_existing_salary_slips()
 		self.validate_payroll_payable_account()
 		if self.get_employees_with_unmarked_attendance():
@@ -87,14 +195,14 @@ class PayrollEntry(Document):
 			.select(SalarySlip.employee, SalarySlip.name)
 			.where(
 				(SalarySlip.employee.isin([emp.employee for emp in self.employees]))
-				& (SalarySlip.start_date == self.start_date)
-				& (SalarySlip.end_date == self.end_date)
+				& (SalarySlip.start_date <= self.end_date)
+				& (SalarySlip.end_date >= self.start_date)
 				& (SalarySlip.docstatus != 2)
 			)
 		).run(as_dict=True)
 
 		if len(existing_salary_slips):
-			msg = _("Salary Slip already exists for {0} for the given dates").format(
+			msg = _("Salary Slip already exists for {0} for an overlapping payroll period").format(
 				comma_and([frappe.bold(d.employee) for d in existing_salary_slips])
 			)
 			msg += "<br><br>"
@@ -198,6 +306,7 @@ class PayrollEntry(Document):
 			company=self.company,
 			branch=self.branch,
 			department=self.department,
+			employment_type=self.employment_type,
 			designation=self.designation,
 			grade=self.grade,
 			currency=self.currency,
@@ -1301,6 +1410,23 @@ class PayrollEntry(Document):
 		return [len(employee_eligible_for_overtime) > 0, len(unsubmitted_overtime_slips) > 0]
 
 
+def validate_payment_status_transition(current_status, new_status, reference=None, failure_reason=None):
+	transitions = {
+		"Pending": {"Ready"},
+		"Ready": {"Sent", "Failed"},
+		"Sent": {"Paid", "Failed"},
+		"Paid": {"Reconciled"},
+		"Failed": {"Ready"},
+		"Reconciled": set(),
+	}
+	if new_status not in transitions.get(current_status, set()):
+		frappe.throw(_("Payment status cannot move from {0} to {1}.").format(current_status, new_status))
+	if new_status in {"Paid", "Reconciled"} and not reference:
+		frappe.throw(_("A payment reference is required for status {0}.").format(new_status))
+	if new_status == "Failed" and not failure_reason:
+		frappe.throw(_("A failure reason is required."))
+
+
 def get_salary_structure(
 	company: str, currency: str, salary_slip_based_on_timesheet: int, payroll_frequency: str
 ) -> list[str]:
@@ -1396,7 +1522,7 @@ def set_filter_conditions(query, filters, qb_object):
 	if filters.get("employees"):
 		query = query.where(qb_object.name.notin(filters.get("employees")))
 
-	for fltr_key in ["branch", "department", "designation", "grade"]:
+	for fltr_key in ["branch", "department", "employment_type", "designation", "grade"]:
 		if filters.get(fltr_key):
 			query = query.where(qb_object[fltr_key] == filters[fltr_key])
 
