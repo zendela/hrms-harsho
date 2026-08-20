@@ -19,7 +19,6 @@
   "letter_head",
   "has_nhif",
   "has_nssf",
-  "has_tuico",
   "contribution_in_percent",
   "has_fixed_contribution",
   "contribution_fixed_amount",
@@ -784,16 +783,6 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Has NSSF",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fetch_from": "employee.has_tuico",
-   "fetch_if_empty": 1,
-   "fieldname": "has_tuico",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Has TUICO",
    "read_only": 1
   },
   {

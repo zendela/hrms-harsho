@@ -5,8 +5,6 @@ import frappe
 from frappe import _
 from frappe.utils import flt, get_first_day, get_last_day, getdate
 
-from hrms.payroll.report.tanzania_statutory_utils import get_component_amounts_bulk
-
 
 def execute(filters=None):
 	filters = filters or {}
@@ -38,40 +36,49 @@ def get_data(filters):
 	month_start = get_first_day(getdate(filters["payroll_month"]))
 	month_end = get_last_day(getdate(filters["payroll_month"]))
 
-	# Only include employees with has_tuico = 1 on their salary slip
+	# The TUICO component on the submitted salary slip determines membership.
 	slips = frappe.db.sql(
 		"""
 		SELECT
 			ss.name, ss.employee, ss.employee_name,
-			ss.department, ss.gross_pay
+			ss.department, ss.gross_pay,
+			COALESCE(SUM(sd.amount), 0) AS tuico
 		FROM `tabSalary Slip` ss
+		INNER JOIN `tabSalary Detail` sd
+			ON sd.parent = ss.name
+			AND sd.parenttype = 'Salary Slip'
+			AND sd.parentfield = 'deductions'
+			AND sd.salary_component = %(tuico_component)s
 		WHERE
 			ss.docstatus = 1
 			AND ss.company = %(company)s
 			AND ss.start_date >= %(month_start)s
 			AND ss.end_date <= %(month_end)s
-			AND ss.has_tuico = 1
+		GROUP BY
+			ss.name, ss.employee, ss.employee_name,
+			ss.department, ss.gross_pay
 		ORDER BY ss.employee_name ASC
 		""",
-		{"company": filters["company"], "month_start": month_start, "month_end": month_end},
+		{
+			"company": filters["company"],
+			"month_start": month_start,
+			"month_end": month_end,
+			"tuico_component": filters["tuico_component"],
+		},
 		as_dict=True,
 	)
 
 	if not slips:
 		return []
 
-	slip_names = [s.name for s in slips]
-	tuico_map = get_component_amounts_bulk(slip_names, filters["tuico_component"])
-
 	data = []
 	for slip in slips:
-		tuico = tuico_map.get(slip.name, 0.0)
 		data.append({
 			"employee":      slip.employee,
 			"employee_name": slip.employee_name,
 			"department":    slip.department,
 			"gross_pay":     flt(slip.gross_pay),
-			"tuico":         tuico,
+			"tuico":         flt(slip.tuico),
 			"salary_slip":   slip.name,
 		})
 

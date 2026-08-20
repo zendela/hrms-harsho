@@ -155,12 +155,12 @@ Create each component below one at a time. For each one, follow these steps:
 | PAYE | Deduction | ✅ Yes | Tick this — system computes from tax slab automatically |
 | NSSF Employee | Deduction | ❌ No | Formula: `gross_pay * contribution_in_percent / 100` |
 | NHIF | Deduction | ❌ No | Fixed amount per employee — use condition `has_nhif == 1` |
-| TUICO | Deduction | ❌ No | Fixed amount — use condition `has_tuico == 1` |
+| TUICO | Deduction | ❌ No | Fixed amount; add it only to Salary Structures used by TUICO members |
 | WCF | Deduction | ❌ No | Employer-only — formula: `gross_pay * 0.005` |
 | Salary Advance Recovery | Deduction | ❌ No | Leave amount/formula blank — injected automatically |
 | Employee Sales Deduction | Deduction | ❌ No | Leave amount/formula blank — injected via Employee Sale |
 
-> ⚠️ **Important for NSSF, NHIF, TUICO:** These do not apply to every employee. You must add a **Condition** on the salary structure row so the system skips employees who are not enrolled. See Section 3 for how to set conditions.
+> ⚠️ **Important for NSSF and NHIF:** These do not apply to every employee. You must add a **Condition** on the salary structure row so the system skips employees who are not enrolled. For TUICO, use a Salary Structure containing the TUICO component only for union members.
 
 > ⚠️ **For PAYE:** After ticking **Variable Based on Taxable Salary**, a new field **Income Tax Slab** will appear. Select the slab you created in step 1.4.
 
@@ -199,7 +199,7 @@ In the **Deductions** table, click **Add Row** for each deduction:
 | PAYE | *(leave blank — auto-computed)* | *(none)* | Tick Variable Based on Taxable Salary on the component |
 | NSSF Employee | `gross_pay * (contribution_in_percent or 10) / 100` | `has_nssf == 1` | Only deducted for enrolled employees |
 | NHIF | *(fixed amount per grade — enter manually)* | `has_nhif == 1` | Only deducted for enrolled employees |
-| TUICO | *(fixed amount)* | `has_tuico == 1` | Only deducted for enrolled employees |
+| TUICO | *(fixed amount)* | *(none)* | Add only to a Salary Structure assigned to TUICO members |
 | WCF | `gross_pay * 0.005` | *(none)* | Employer cost — shown on slip for reporting |
 | Salary Advance Recovery | *(leave blank)* | *(none)* | Auto-injected when advance is paid |
 | Employee Sales Deduction | *(leave blank)* | *(none)* | Auto-injected from Employee Sale |
@@ -251,7 +251,6 @@ Then scroll to **Statutory Benefits** and tick the applicable boxes:
 |---|---|
 | **Has NSSF** | Employee is registered with NSSF |
 | **Has NHIF** | Employee has NHIF health insurance |
-| **Has TUICO** | Employee is a TUICO union member |
 
 If **Has NSSF** is ticked, also fill in:
 
