@@ -29,7 +29,8 @@
   "overwrite_salary_structure_amount",
   "properties_and_references_section",
   "ref_doctype",
-  "ref_docname"
+  "ref_docname",
+  "is_advance_recovery_schedule"
  ],
  "fields": [
   {
@@ -165,6 +166,15 @@
    "label": "Reference Document",
    "no_copy": 1,
    "options": "ref_doctype",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_advance_recovery_schedule",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Is Advance Recovery Schedule",
+   "no_copy": 1,
    "read_only": 1
   },
   {

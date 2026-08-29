@@ -67,8 +67,8 @@ def get_data(filters):
 	month_start = get_first_day(getdate(payroll_month))
 	month_end = get_last_day(getdate(payroll_month))
 
-	# Fetch Unpaid (approved/submitted) advances for the payroll month,
-	# joined with Employee to pull bank details.
+	# Fetch all approved/submitted advances for the payroll month. Paid advances
+	# must remain visible because automatic disbursement pays them during approval.
 	advances = frappe.db.sql(
 		"""
 		SELECT
@@ -80,7 +80,6 @@ def get_data(filters):
 		INNER JOIN `tabEmployee` emp ON emp.name = ea.employee
 		WHERE
 			ea.docstatus = 1
-			AND ea.status = 'Unpaid'
 			AND ea.company = %(company)s
 			AND ea.payroll_month BETWEEN %(month_start)s AND %(month_end)s
 		ORDER BY ea.employee_name ASC

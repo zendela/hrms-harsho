@@ -3,7 +3,7 @@ from frappe.utils import getdate
 from frappe import _
 
 def _policy():
-    basis = frappe.db.get_single_value("HR Settings", "advance_cap_basis") or "Base"
+    basis = frappe.db.get_single_value("HR Settings", "advance_cap_basis") or "Basic Pay"
     percent = float(frappe.db.get_single_value("HR Settings", "advance_cap_percent") or 30)
     return basis, percent
 
@@ -51,7 +51,7 @@ def compute_advance_cap(employee: str, posting_date: str = None):
     on_date = getdate(posting_date) if posting_date else getdate()
 
     basis, percent = _policy()
-    if basis == "Gross":
+    if basis in ("Gross", "Gross Pay"):
         gross, note = _last_gross(employee, on_date)
         cap_base = gross
     else:

@@ -265,14 +265,21 @@ function refresh_cap(frm) {
     frm.set_value('cap_basis', m.basis || '');
     frm.set_value('cap_percent', m.percent || 0);
     frm.set_value('cap_source_note', m.note || '');
-    // Auto-populate requested amount from eligible amount
-    frm.set_value('advance_amount', m.cap_amount || 0);
+    // Suggest the cap only once; never overwrite an employee's saved request.
+    if (frm.is_new() && !flt(frm.doc.advance_amount)) {
+      frm.set_value('advance_amount', m.cap_amount || 0);
+    }
   });
 }
 frappe.ui.form.on('Employee Advance', {
   refresh(frm) {
     // Show only for submitted docs
-    if (frm.doc.docstatus === 1) {
+    if (
+      frm.doc.docstatus === 1 &&
+      frappe.user_roles.some((role) =>
+        ['Accounts User', 'Accounts Manager', 'System Manager'].includes(role)
+      )
+    ) {
       frm.add_custom_button(__('Refresh Payment Status'), () => {
         frappe.call({
           method: 'hrms.hr.doctype.employee_advance.employee_advance_reconcile.refresh_payments',

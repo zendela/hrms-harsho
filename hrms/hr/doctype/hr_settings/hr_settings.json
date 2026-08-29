@@ -55,6 +55,7 @@
   "unlink_payment_section",
   "unlink_payment_on_cancellation_of_employee_advance",
   "advance_require_approval",
+  "auto_disburse_approved_advances",
   "column_break_roxt",
   "advance_cap_basis",
   "advance_cap_percent",
@@ -356,6 +357,13 @@
    "fieldname": "advance_require_approval",
    "fieldtype": "Check",
    "label": "Salary Advance Require Approval"
+  },
+  {
+   "default": "0",
+   "description": "Create and submit a Payment Entry when an Employee Advance is approved and submitted. The advance is marked paid from the accounting ledger.",
+   "fieldname": "auto_disburse_approved_advances",
+   "fieldtype": "Check",
+   "label": "Auto-disburse Approved Salary Advances"
   },
   {
    "fieldname": "column_break_roxt",

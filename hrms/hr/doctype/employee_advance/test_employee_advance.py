@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.tests import IntegrationTestCase, change_settings
-from frappe.utils import flt, nowdate
+from frappe.utils import add_months, flt, get_first_day, nowdate
 
 import erpnext
 from erpnext.accounts.doctype.account.test_account import create_account
@@ -231,6 +231,71 @@ class TestEmployeeAdvance(IntegrationTestCase):
 		self.assertEqual(advance.status, "Unpaid")
 		self.assertEqual(advance.paid_amount, 700)
 
+	@change_settings(
+		"HR Settings",
+		{"auto_disburse_approved_advances": 1, "advance_deduction_component": None},
+	)
+	def test_auto_disburse_approved_advance(self):
+		employee_name = make_employee("auto.disburse@employee.advance", "_Test Company")
+		advance = make_employee_advance(employee_name, {"workflow_state": "Approved"})
+		advance.reload()
+
+		self.assertEqual(advance.status, "Paid")
+		self.assertEqual(advance.paid_amount, advance.advance_amount)
+		self.assertTrue(advance.auto_payment_entry)
+
+		payment_entry = frappe.get_doc("Payment Entry", advance.auto_payment_entry)
+		self.assertEqual(payment_entry.docstatus, 1)
+		self.assertEqual(payment_entry.references[0].reference_name, advance.name)
+
+		# A retry returns the existing submitted entry instead of paying twice.
+		self.assertEqual(
+			advance.create_and_submit_payment_entry(),
+			payment_entry.name,
+		)
+
+	@change_settings("HR Settings", {"auto_disburse_approved_advances": 0})
+	def test_auto_recovery_schedule_follows_payment_lifecycle(self):
+		employee_name = make_employee("auto.recovery@employee.advance", "_Test Company")
+		component = create_salary_component("Automatic Advance Recovery", type="Deduction")
+		make_salary_structure(
+			"Test Automatic Advance Recovery",
+			"Monthly",
+			employee=employee_name,
+			company="_Test Company",
+		)
+
+		previous_component = frappe.db.get_single_value("HR Settings", "advance_deduction_component")
+		frappe.db.set_single_value("HR Settings", "advance_deduction_component", component.name)
+		try:
+			advance = make_employee_advance(employee_name)
+			payment_entry = make_payment_entry(advance)
+			advance.reload()
+
+			self.assertEqual(advance.status, "Paid")
+			self.assertEqual(advance.return_amount, 0)
+
+			deduction = frappe.get_doc(
+				"Additional Salary",
+				{
+					"ref_doctype": "Employee Advance",
+					"ref_docname": advance.name,
+					"is_advance_recovery_schedule": 1,
+				},
+			)
+			self.assertEqual(deduction.docstatus, 1)
+
+			payment_entry.cancel()
+			advance.reload()
+			deduction.reload()
+
+			self.assertEqual(advance.status, "Unpaid")
+			self.assertEqual(deduction.docstatus, 2)
+		finally:
+			frappe.db.set_single_value(
+				"HR Settings", "advance_deduction_component", previous_component
+			)
+
 	def test_precision(self):
 		employee_name = make_employee("_T@employee.advance", "_Test Company")
 		advance = make_employee_advance(employee_name)
@@ -396,6 +461,10 @@ def make_employee_advance(employee_name, args=None):
 	doc.exchange_rate = 1
 	doc.advance_amount = 1000
 	doc.posting_date = nowdate()
+	existing_advances = frappe.db.count(
+		"Employee Advance", {"employee": employee_name, "docstatus": ["!=", 2]}
+	)
+	doc.payroll_month = get_first_day(add_months(nowdate(), existing_advances))
 	doc.advance_account = "_Test Employee Advance - _TC"
 
 	if args:

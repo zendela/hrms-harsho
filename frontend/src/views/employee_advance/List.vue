@@ -22,7 +22,6 @@ const EMPLOYEE_ADVANCE_FIELDS = [
 	"employee",
 	"employee_name",
 	"status",
-	"purpose",
 	"advance_amount",
 	"paid_amount",
 	"claimed_amount",

@@ -212,6 +212,10 @@ doc_events = {
 	},
 	"Project": {"validate": "hrms.controllers.employee_boarding_controller.update_employee_boarding_status"},
 	"Task": {"on_update": "hrms.controllers.employee_boarding_controller.update_task"},
+	"Employee Advance": {
+		"validate": "hrms.hr.doctype.employee_advance.employee_advance_cap.validate",
+		"before_submit": "hrms.hr.doctype.employee_advance.employee_advance_cap.before_submit",
+	},
 }
 
 # Scheduled Tasks
@@ -371,12 +375,6 @@ company_data_to_be_ignored = [
 ]
 # override_whitelisted_methods = {"hrms.hr.utils.shift_swap"}
 
-doc_events = {
-    "Employee Advance": {
-        "validate": "hrms.hr.doctype.employee_advance.employee_advance_cap.validate",
-        "before_submit": "hrms.hr.doctype.employee_advance.employee_advance_cap.before_submit",
-    }
-}
 fixtures = [
     {
         "doctype": "Workflow",

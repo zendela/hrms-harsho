@@ -38,6 +38,7 @@
   "repay_unclaimed_amount_from_salary",
   "more_info_section",
   "status",
+  "auto_payment_entry",
   "workflow_state",
   "column_break_kimx",
   "amended_from"
@@ -137,6 +138,15 @@
    "label": "Status",
    "no_copy": 1,
    "options": "Draft\nPaid\nUnpaid\nClaimed\nReturned\nPartly Claimed and Returned\nCancelled",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "auto_payment_entry",
+   "fieldtype": "Link",
+   "label": "Automatic Payment Entry",
+   "no_copy": 1,
+   "options": "Payment Entry",
    "read_only": 1
   },
   {
@@ -309,6 +319,30 @@
    "report": 1,
    "role": "Expense Approver",
    "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR User",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Accounts User",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "read": 1,
+   "role": "Accounts Manager",
    "submit": 1,
    "write": 1
   }

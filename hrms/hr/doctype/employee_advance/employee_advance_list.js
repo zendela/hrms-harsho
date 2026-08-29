@@ -19,6 +19,11 @@ frappe.listview_settings["Employee Advance"] = {
 	},
 
 	onload: function (listview) {
+		const paymentRoles = ["Accounts User", "Accounts Manager", "System Manager"];
+		if (!frappe.user_roles.some((role) => paymentRoles.includes(role))) {
+			return;
+		}
+
 		listview.page.add_action_item(__("Mark as Paid"), () => {
 			const selected = listview.get_checked_items();
 			if (!selected.length) {

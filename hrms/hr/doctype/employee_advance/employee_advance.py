@@ -29,6 +29,8 @@ class EmployeeAdvance(Document):
 		validate_active_employee(self.employee)
 		self.validate_exchange_rate()
 		self.validate_advance_account_type()
+		if self.payroll_month:
+			self.payroll_month = get_first_day(getdate(self.payroll_month))
 		self.validate_one_advance_per_month()
 		self.set_status()
 		self.set_pending_amount()
@@ -73,6 +75,19 @@ class EmployeeAdvance(Document):
 					).format(self.company),
 					title=_("Missing Advance Account"),
 				)
+
+	def on_submit(self):
+		if not frappe.db.get_single_value("HR Settings", "auto_disburse_approved_advances"):
+			return
+
+		requires_approval = frappe.db.get_single_value("HR Settings", "advance_require_approval")
+		if requires_approval and self.workflow_state != "Approved":
+			frappe.throw(
+				_("The salary advance must complete approval before it can be paid."),
+				title=_("Approval Required"),
+			)
+
+		self.create_and_submit_payment_entry()
 
 	def on_cancel(self):
 		self.ignore_linked_doctypes = ("GL Entry", "Payment Ledger Entry", "Advance Payment Ledger Entry")
@@ -212,6 +227,8 @@ class EmployeeAdvance(Document):
 		self.reload()
 		if self.status == "Paid":
 			self.create_advance_deduction_entry()
+		elif flt(self.paid_amount, precision) < flt(self.advance_amount, precision):
+			self.cancel_unprocessed_advance_deduction_entry()
 
 	def create_advance_deduction_entry(self):
 		"""
@@ -252,10 +269,74 @@ class EmployeeAdvance(Document):
 		additional_salary.payroll_date     = getdate(self.payroll_month)
 		additional_salary.ref_doctype      = "Employee Advance"
 		additional_salary.ref_docname      = self.name
+		additional_salary.is_advance_recovery_schedule = 1
 		additional_salary.overwrite_salary_structure_amount = 0
 
 		additional_salary.insert(ignore_permissions=True)
 		additional_salary.submit()
+
+	def create_and_submit_payment_entry(self, bank_account=None, mode_of_payment=None):
+		"""Create the accounting evidence for an approved salary advance."""
+		# Serialize automated/manual payment attempts for this advance. This is
+		# required in addition to the idempotency lookup for concurrent requests.
+		frappe.db.sql(
+			"SELECT name FROM `tabEmployee Advance` WHERE name = %s FOR UPDATE",
+			self.name,
+		)
+
+		existing = get_employee_advance_payment_entries(self.name)
+		if existing:
+			submitted = next((entry for entry in existing if entry.docstatus == 1), None)
+			if submitted:
+				return submitted.name
+
+			frappe.throw(
+				_("A draft Payment Entry {0} already exists for this advance.").format(
+					get_link_to_form("Payment Entry", existing[0].name)
+				),
+				title=_("Payment Entry Already Exists"),
+			)
+
+		from hrms.overrides.employee_payment_entry import get_payment_entry_for_employee
+
+		payment_entry = get_payment_entry_for_employee(
+			self.doctype,
+			self.name,
+			bank_account=bank_account,
+			mode_of_payment=mode_of_payment,
+		)
+		payment_entry.reference_no = f"AUTO-{self.name}"
+		payment_entry.reference_date = nowdate()
+		payment_entry.remarks = _("Automatic payment for approved Employee Advance {0}").format(
+			self.name
+		)
+		payment_entry.insert(ignore_permissions=True)
+		payment_entry.submit()
+		self.db_set("auto_payment_entry", payment_entry.name)
+		return payment_entry.name
+
+	def cancel_unprocessed_advance_deduction_entry(self):
+		"""Cancel the recovery schedule when its payment is reversed.
+
+		If payroll already consumed the schedule, Frappe's linked-document
+		validation blocks cancellation and consequently blocks the payment
+		reversal. Finance must then reverse payroll first.
+		"""
+		additional_salaries = frappe.get_all(
+			"Additional Salary",
+			filters={
+				"ref_doctype": "Employee Advance",
+				"ref_docname": self.name,
+				"is_advance_recovery_schedule": 1,
+				"docstatus": 1,
+			},
+			pluck="name",
+		)
+
+		for name in additional_salaries:
+			deduction = frappe.get_doc("Additional Salary", name)
+			deduction.flags.ignore_permissions = True
+			deduction.cancel()
 
 	def update_claimed_amount(self):
 		claimed_amount = (
@@ -479,20 +560,52 @@ def get_voucher_type(mode_of_payment=None):
 	return voucher_type
 
 
+def get_employee_advance_payment_entries(advance_name):
+	return frappe.db.sql(
+		"""
+		SELECT DISTINCT pe.name, pe.docstatus
+		FROM `tabPayment Entry` pe
+		INNER JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+		WHERE per.reference_doctype = 'Employee Advance'
+			AND per.reference_name = %s
+			AND pe.docstatus < 2
+		ORDER BY pe.docstatus DESC, pe.creation
+		""",
+		advance_name,
+		as_dict=True,
+	)
+
+
 @frappe.whitelist()
 def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
 	"""
-	Create a single Payment Entry covering all selected Unpaid advances.
+	Create a submitted Payment Entry for each selected Unpaid advance.
 	All advances must belong to the same company and use the same currency.
-	Returns the submitted Payment Entry name.
+	Returns the submitted Payment Entry names.
 	"""
 	import json
+
+	frappe.only_for(("Accounts User", "Accounts Manager", "System Manager"))
 
 	if isinstance(advance_names, str):
 		advance_names = json.loads(advance_names)
 
 	if not advance_names:
 		frappe.throw(_("No advances selected."))
+
+	advance_names = list(dict.fromkeys(advance_names))
+	for advance_name in sorted(advance_names):
+		frappe.db.sql(
+			"SELECT name FROM `tabEmployee Advance` WHERE name = %s FOR UPDATE",
+			advance_name,
+		)
+
+	for advance_name in advance_names:
+		if not frappe.has_permission("Employee Advance", "read", doc=advance_name):
+			frappe.throw(
+				_("You do not have permission to pay Employee Advance {0}.").format(advance_name),
+				frappe.PermissionError,
+			)
 
 	advances = frappe.get_all(
 		"Employee Advance",
@@ -505,6 +618,15 @@ def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
 
 	if not advances:
 		frappe.throw(_("No submitted Unpaid advances found in the selection."))
+
+	eligible_names = {advance.name for advance in advances}
+	ineligible_names = set(advance_names) - eligible_names
+	if ineligible_names:
+		frappe.throw(
+			_("These advances are not submitted and unpaid: {0}").format(
+				", ".join(sorted(ineligible_names))
+			)
+		)
 
 	# All advances must share the same company and currency
 	companies  = {a.company for a in advances}
@@ -521,89 +643,14 @@ def bulk_mark_as_paid(advance_names, bank_account=None, mode_of_payment=None):
 				", ".join(currencies)
 			)
 		)
-
-	company  = companies.pop()
-	currency = currencies.pop()
-
-	# Resolve payment account
-	payment_account = get_default_bank_cash_account(
-		company, account_type="Cash", mode_of_payment=mode_of_payment
-	)
-	if bank_account:
-		gl_account = frappe.db.get_value("Bank Account", bank_account, "account")
-		if gl_account:
-			from erpnext.accounts.utils import get_account_currency
-			payment_account = frappe._dict({
-				"account": gl_account,
-				"account_currency": get_account_currency(gl_account),
-			})
-	if not payment_account or not payment_account.get("account"):
-		frappe.throw(
-			_("Please set a Default Cash Account in Company defaults or pass a bank_account.")
-		)
-
-	company_currency = erpnext.get_company_currency(company)
-	advance_account  = advances[0].advance_account or frappe.db.get_value(
-		"Company", company, "default_employee_advance_account"
-	)
-	if not advance_account:
-		frappe.throw(
-			_("No Advance Account found. Set the Default Employee Advance Account on the Company.")
-		)
-
-	from erpnext.accounts.utils import get_account_currency
-	advance_account_currency = get_account_currency(advance_account)
-
-	# Payment Entry requires a single party — create one PE per employee
-	# so each entry has the correct party set.
-	from itertools import groupby
-	advances_sorted = sorted(advances, key=lambda a: a.employee)
-
 	created = []
-	for employee, emp_advances in groupby(advances_sorted, key=lambda a: a.employee):
-		emp_advances = list(emp_advances)
-
-		pe = frappe.new_doc("Payment Entry")
-		pe.payment_type               = "Pay"
-		pe.company                    = company
-		pe.posting_date               = nowdate()
-		pe.mode_of_payment            = mode_of_payment
-		pe.party_type                 = "Employee"
-		pe.party                      = employee
-		pe.paid_from                  = payment_account.account
-		pe.paid_to                    = advance_account
-		pe.paid_from_account_currency = payment_account.get("account_currency") or company_currency
-		pe.paid_to_account_currency   = advance_account_currency
-
-		total_outstanding = 0.0
-
-		for adv in emp_advances:
-			outstanding = flt(adv.advance_amount) - flt(adv.paid_amount)
-			if advance_account_currency != adv.currency:
-				outstanding = outstanding * flt(adv.exchange_rate)
-
-			pe.append(
-				"references",
-				{
-					"reference_doctype":  "Employee Advance",
-					"reference_name":     adv.name,
-					"total_amount":       flt(adv.advance_amount),
-					"outstanding_amount": outstanding,
-					"allocated_amount":   outstanding,
-				},
+	for advance in advances:
+		doc = frappe.get_doc("Employee Advance", advance.name)
+		created.append(
+			doc.create_and_submit_payment_entry(
+				bank_account=bank_account,
+				mode_of_payment=mode_of_payment,
 			)
-			total_outstanding += outstanding
-
-		pe.paid_amount     = total_outstanding
-		pe.received_amount = total_outstanding
-
-		pe.setup_party_account_field()
-		pe.set_missing_values()
-		pe.set_missing_ref_details()
-		pe.set_amounts()
-
-		pe.insert(ignore_permissions=True)
-		pe.submit()
-		created.append(pe.name)
+		)
 
 	return created

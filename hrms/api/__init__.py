@@ -623,7 +623,6 @@ def get_employee_advance_balance(employee: str) -> list[dict]:
 			Advance.name,
 			Advance.employee,
 			Advance.status,
-			Advance.purpose,
 			Advance.paid_amount,
 			(Advance.paid_amount - (Advance.claimed_amount + Advance.return_amount)).as_("balance_amount"),
 			Advance.posting_date,

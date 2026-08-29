@@ -192,6 +192,12 @@ class AdditionalSalary(Document):
 			)
 
 	def update_return_amount_in_employee_advance(self):
+		# An automatically created deduction is only a recovery schedule. The
+		# Employee Advance ledger is updated when payroll posts the accounting
+		# entry, not while the future deduction is merely being scheduled.
+		if self.is_advance_recovery_schedule:
+			return
+
 		if self.ref_doctype == "Employee Advance" and self.ref_docname:
 			return_amount = frappe.db.get_value("Employee Advance", self.ref_docname, "return_amount")
 
