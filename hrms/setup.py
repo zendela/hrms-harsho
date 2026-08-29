@@ -771,7 +771,7 @@ def get_salary_slip_loan_fields():
 				"fieldtype": "Table",
 				"label": _("Employee Loan"),
 				"options": "Salary Slip Loan",
-				"print_hide": 1,
+				"print_hide": 0,
 				"insert_after": "loan_repayment_sb_1",
 			},
 			{
@@ -811,6 +811,15 @@ def get_salary_slip_loan_fields():
 				"options": "Company:company:default_currency",
 				"read_only": 1,
 				"insert_after": "loan_cb_1",
+			},
+			{
+				"fieldname": "total_deductions_including_loan",
+				"fieldtype": "Currency",
+				"label": _("Total Deductions Including Loan"),
+				"default": "0",
+				"options": "Company:company:default_currency",
+				"read_only": 1,
+				"insert_after": "total_loan_repayment",
 			},
 		],
 		"Loan": [

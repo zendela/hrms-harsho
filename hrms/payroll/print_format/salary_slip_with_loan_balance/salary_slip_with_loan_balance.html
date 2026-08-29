@@ -1,0 +1,76 @@
+<div class="text-center">
+	<h3>{{ _("Salary Slip") }}</h3>
+	<p>{{ doc.name }}</p>
+</div>
+
+<div class="row">
+	<div class="col-xs-6">
+		<p><strong>{{ _("Employee") }}:</strong> {{ doc.employee_name }} ({{ doc.employee }})</p>
+		<p><strong>{{ _("Company") }}:</strong> {{ doc.company }}</p>
+		{% if doc.department %}<p><strong>{{ _("Department") }}:</strong> {{ doc.department }}</p>{% endif %}
+	</div>
+	<div class="col-xs-6">
+		<p><strong>{{ _("Period") }}:</strong> {{ frappe.utils.formatdate(doc.start_date) }} - {{ frappe.utils.formatdate(doc.end_date) }}</p>
+		<p><strong>{{ _("Working Days") }}:</strong> {{ doc.total_working_days }}</p>
+		<p><strong>{{ _("Payment Days") }}:</strong> {{ doc.payment_days }}</p>
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-xs-6">
+		<h4>{{ _("Earnings") }}</h4>
+		<table class="table table-bordered table-condensed">
+			{% for row in doc.earnings %}
+			<tr><td>{{ row.salary_component }}</td><td class="text-right">{{ frappe.utils.fmt_money(row.amount, currency=doc.currency) }}</td></tr>
+			{% endfor %}
+		</table>
+	</div>
+	<div class="col-xs-6">
+		<h4>{{ _("Salary Deductions") }}</h4>
+		<table class="table table-bordered table-condensed">
+			{% for row in doc.deductions %}
+			<tr><td>{{ row.salary_component }}</td><td class="text-right">{{ frappe.utils.fmt_money(row.amount, currency=doc.currency) }}</td></tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
+
+{% if doc.loans %}
+<h4>{{ _("Loan Repayment") }}</h4>
+<table class="table table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>{{ _("Loan") }}</th>
+			<th class="text-right">{{ _("Opening Principal") }}</th>
+			<th class="text-right">{{ _("Principal Deducted") }}</th>
+			<th class="text-right">{{ _("Interest Deducted") }}</th>
+			<th class="text-right">{{ _("Total Deducted") }}</th>
+			<th class="text-right">{{ _("Remaining Principal") }}</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for row in doc.loans %}
+		<tr>
+			<td>{{ row.loan }}</td>
+			<td class="text-right">{{ frappe.utils.fmt_money(row.opening_principal_balance, currency=doc.currency) }}</td>
+			<td class="text-right">{{ frappe.utils.fmt_money(row.principal_amount, currency=doc.currency) }}</td>
+			<td class="text-right">{{ frappe.utils.fmt_money(row.interest_amount, currency=doc.currency) }}</td>
+			<td class="text-right">{{ frappe.utils.fmt_money(row.total_payment, currency=doc.currency) }}</td>
+			<td class="text-right">{{ frappe.utils.fmt_money(row.closing_principal_balance, currency=doc.currency) }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+
+<table class="table table-bordered">
+	<tr><th>{{ _("Gross Pay") }}</th><td class="text-right">{{ frappe.utils.fmt_money(doc.gross_pay, currency=doc.currency) }}</td></tr>
+	<tr><th>{{ _("Salary Deductions") }}</th><td class="text-right">{{ frappe.utils.fmt_money(doc.total_deduction, currency=doc.currency) }}</td></tr>
+	{% if doc.total_loan_repayment %}
+	<tr><th>{{ _("Loan Repayment") }}</th><td class="text-right">{{ frappe.utils.fmt_money(doc.total_loan_repayment, currency=doc.currency) }}</td></tr>
+	<tr><th>{{ _("Total Deductions Including Loan") }}</th><td class="text-right">{{ frappe.utils.fmt_money(doc.total_deductions_including_loan, currency=doc.currency) }}</td></tr>
+	{% endif %}
+	<tr><th>{{ _("Net Pay") }}</th><td class="text-right"><strong>{{ frappe.utils.fmt_money(doc.net_pay, currency=doc.currency) }}</strong></td></tr>
+</table>
+
+<p><strong>{{ _("Total in words") }}:</strong> {{ doc.total_in_words }}</p>

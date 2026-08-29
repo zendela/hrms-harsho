@@ -807,6 +807,17 @@ class TestPayrollEntry(FrappeTestCase):
 		salary_slip_name = frappe.db.get_value("Salary Slip", {"payroll_entry": payroll_entry.name}, "name")
 		salary_slip = frappe.get_doc("Salary Slip", salary_slip_name)
 		payroll_entry.reload()
+		self.assertTrue(salary_slip.loans)
+		for repayment in salary_slip.loans:
+			self.assertGreater(repayment.opening_principal_balance, 0)
+			self.assertEqual(
+				flt(repayment.closing_principal_balance),
+				flt(repayment.opening_principal_balance - repayment.principal_amount),
+			)
+		self.assertEqual(
+			flt(salary_slip.total_deductions_including_loan),
+			flt(salary_slip.total_deduction + salary_slip.total_loan_repayment),
+		)
 
 		initial_gross_pay = flt(salary_slip.gross_pay) - flt(salary_slip.total_deduction)
 		loan_repayment_amount = flt(salary_slip.total_loan_repayment)

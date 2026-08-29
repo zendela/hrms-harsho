@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 if TYPE_CHECKING:
 	from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
@@ -40,9 +41,15 @@ def set_loan_repayment(doc: "SalarySlip"):
 					"loans",
 					{
 						"loan": loan.name,
+						"opening_principal_balance": amounts["pending_principal_amount"],
 						"total_payment": amounts["payable_amount"],
 						"interest_amount": amounts["interest_amount"],
 						"principal_amount": amounts["payable_principal_amount"],
+						"closing_principal_balance": max(
+							flt(amounts["pending_principal_amount"])
+							- flt(amounts["payable_principal_amount"]),
+							0,
+						),
 						"loan_account": loan.loan_account,
 						"interest_income_account": loan.interest_income_account,
 					},
@@ -53,6 +60,10 @@ def set_loan_repayment(doc: "SalarySlip"):
 	for payment in doc.get("loans", []):
 		amounts = calculate_amounts(payment.loan, doc.end_date)
 		total_amount = amounts["payable_amount"]
+		payment.opening_principal_balance = flt(amounts["pending_principal_amount"])
+		payment.closing_principal_balance = max(
+			payment.opening_principal_balance - flt(payment.principal_amount), 0
+		)
 
 		if payment.total_payment > total_amount:
 			frappe.throw(

@@ -873,6 +873,7 @@ class SalarySlip(TransactionBase):
 
 	def set_net_pay(self):
 		self.total_deduction = self.get_component_totals("deductions")
+		self.set_total_deductions_including_loan()
 		self.base_total_deduction = flt(
 			flt(self.total_deduction) * flt(self.exchange_rate), self.precision("base_total_deduction")
 		)
@@ -887,6 +888,12 @@ class SalarySlip(TransactionBase):
 				flt(self.hour_rate) * flt(self.exchange_rate), self.precision("base_hour_rate")
 			)
 		self.set_net_total_in_words()
+
+	def set_total_deductions_including_loan(self):
+		if hasattr(self, "total_deductions_including_loan"):
+			self.total_deductions_including_loan = flt(self.total_deduction) + flt(
+				self.get("total_loan_repayment")
+			)
 
 	def compute_taxable_earnings_for_year(self):
 		# get taxable_earnings, opening_taxable_earning, paid_taxes for previous period
@@ -2242,6 +2249,7 @@ class SalarySlip(TransactionBase):
 			self.net_pay = (
 				flt(self.gross_pay) - flt(self.total_deduction) - flt(self.get("total_loan_repayment"))
 			)
+		self.set_total_deductions_including_loan()
 		self.set_base_totals()
 
 	def set_base_totals(self):

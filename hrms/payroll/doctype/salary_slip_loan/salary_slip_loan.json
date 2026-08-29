@@ -9,10 +9,12 @@
   "loan_product",
   "loan_account",
   "interest_income_account",
+  "opening_principal_balance",
   "column_break_4",
   "principal_amount",
   "interest_amount",
   "total_payment",
+  "closing_principal_balance",
   "loan_repayment_entry"
  ],
  "fields": [
@@ -45,10 +47,18 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "opening_principal_balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Opening Principal Balance",
+   "options": "Company:company:default_currency",
+   "read_only": 1
+  },
+  {
    "fieldname": "principal_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Principal Amount",
+   "label": "Principal Deducted",
    "options": "Company:company:default_currency",
    "read_only": 1
   },
@@ -56,7 +66,7 @@
    "fieldname": "interest_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Interest Amount",
+   "label": "Interest Deducted",
    "options": "Company:company:default_currency",
    "read_only": 1
   },
@@ -64,8 +74,16 @@
    "fieldname": "total_payment",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Total Payment",
+   "label": "Total Loan Deduction",
    "options": "Company:company:default_currency"
+  },
+  {
+   "fieldname": "closing_principal_balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Remaining Principal Balance",
+   "options": "Company:company:default_currency",
+   "read_only": 1
   },
   {
    "fieldname": "loan_repayment_entry",
