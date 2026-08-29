@@ -11,19 +11,20 @@ def execute():
 
 	create_custom_fields(get_salary_slip_loan_fields(), ignore_validate=True)
 
-	rows = frappe.db.sql(
-		"""
-		SELECT
-			ssl.name,
-			lr.pending_principal_amount,
-			lr.principal_amount_paid
-		FROM `tabSalary Slip Loan` ssl
-		INNER JOIN `tabLoan Repayment` lr ON lr.name = ssl.loan_repayment_entry
-		WHERE ssl.parenttype = 'Salary Slip'
-			AND lr.docstatus = 1
-		""",
-		as_dict=True,
-	)
+	salary_slip_loan = frappe.qb.DocType("Salary Slip Loan")
+	loan_repayment = frappe.qb.DocType("Loan Repayment")
+	rows = (
+		frappe.qb.from_(salary_slip_loan)
+		.inner_join(loan_repayment)
+		.on(loan_repayment.name == salary_slip_loan.loan_repayment_entry)
+		.select(
+			salary_slip_loan.name,
+			loan_repayment.pending_principal_amount,
+			loan_repayment.principal_amount_paid,
+		)
+		.where(salary_slip_loan.parenttype == "Salary Slip")
+		.where(loan_repayment.docstatus == 1)
+	).run(as_dict=True)
 
 	for row in rows:
 		opening_balance = flt(row.pending_principal_amount)
