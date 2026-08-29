@@ -14,6 +14,20 @@ def _reconcile_doc(ea):
 	}
 
 
+def update_payment_status(doc, method=None):
+	"""Keep linked Employee Advances synchronized with Payment Entry lifecycle events."""
+	advance_names = {
+		reference.reference_name
+		for reference in doc.get("references", [])
+		if reference.reference_doctype == "Employee Advance" and reference.reference_name
+	}
+
+	for advance_name in advance_names:
+		advance = frappe.get_doc("Employee Advance", advance_name)
+		if advance.docstatus == 1:
+			_reconcile_doc(advance)
+
+
 @frappe.whitelist()
 def refresh_payments(advance: str):
 	frappe.only_for(("Accounts User", "Accounts Manager", "System Manager"))

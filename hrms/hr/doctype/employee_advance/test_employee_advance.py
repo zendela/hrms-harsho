@@ -262,6 +262,13 @@ class TestEmployeeAdvance(IntegrationTestCase):
 		employee_name = make_employee("reconcile.payment@employee.advance", "_Test Company")
 		advance = make_employee_advance(employee_name)
 		payment_entry = make_payment_entry(advance)
+		frappe.db.set_value(
+			"Advance Payment Ledger Entry",
+			{"voucher_type": "Payment Entry", "voucher_no": payment_entry.name},
+			"delinked",
+			1,
+			update_modified=False,
+		)
 
 		frappe.db.set_value(
 			"Employee Advance",
@@ -278,6 +285,11 @@ class TestEmployeeAdvance(IntegrationTestCase):
 		advance.reload()
 		self.assertEqual(advance.paid_amount, advance.advance_amount)
 		self.assertEqual(advance.status, "Paid")
+
+		payment_entry.cancel()
+		advance.reload()
+		self.assertEqual(advance.paid_amount, 0)
+		self.assertEqual(advance.status, "Unpaid")
 
 	@change_settings("HR Settings", {"auto_disburse_approved_advances": 0})
 	def test_auto_recovery_schedule_follows_payment_lifecycle(self):

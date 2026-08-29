@@ -178,28 +178,34 @@ class EmployeeAdvance(Document):
 				)
 			)
 
-		paid_amount = (
-			frappe.qb.from_(aple)
-			.select(Abs(Sum(aple.amount)).as_("paid_amount"))
-			.where(
+		def get_ledger_amount(amount_condition, payment_entries):
+			query = frappe.qb.from_(aple).select(Abs(Sum(aple.amount)).as_("amount")).where(
 				(aple.company == self.company)
 				& (aple.delinked == 0)
 				& (aple.against_voucher_type == self.doctype)
 				& (aple.against_voucher_no == self.name)
-				& (paid_amount_condition)
+				& amount_condition
 			)
-		).run(as_dict=True)[0].paid_amount or 0
-		return_amount = (
-			frappe.qb.from_(aple)
-			.select(Abs(Sum(aple.amount)).as_("return_amount"))
-			.where(
-				(aple.company == self.company)
-				& (aple.delinked == 0)
-				& (aple.against_voucher_type == self.doctype)
-				& (aple.against_voucher_no == self.name)
-				& (returned_amount_condition)
-			)
-		).run(as_dict=True)[0].return_amount or 0
+			if payment_entries:
+				query = query.where(aple.voucher_type == "Payment Entry")
+			else:
+				query = query.where(aple.voucher_type != "Payment Entry")
+
+			return query.run(as_dict=True)[0].amount or 0
+
+		# A submitted Payment Entry is the primary accounting document. Some ERPNext
+		# versions fail to create its secondary Advance Payment Ledger row even after
+		# reposting. Use its submitted allocation as a fallback, while separating
+		# other ledger vouchers to avoid counting a ledger-backed payment twice.
+		payment_entry_amounts = self.get_submitted_payment_entry_amounts()
+		paid_amount = get_ledger_amount(paid_amount_condition, payment_entries=False) + max(
+			get_ledger_amount(paid_amount_condition, payment_entries=True),
+			payment_entry_amounts.paid_amount,
+		)
+		return_amount = get_ledger_amount(returned_amount_condition, payment_entries=False) + max(
+			get_ledger_amount(returned_amount_condition, payment_entries=True),
+			payment_entry_amounts.return_amount,
+		)
 
 		if company_currency != self.currency and account_curreny == company_currency:
 			paid_amount = flt(paid_amount) / flt(self.exchange_rate)
@@ -229,6 +235,36 @@ class EmployeeAdvance(Document):
 			self.create_advance_deduction_entry()
 		elif flt(self.paid_amount, precision) < flt(self.advance_amount, precision):
 			self.cancel_unprocessed_advance_deduction_entry()
+
+	def get_submitted_payment_entry_amounts(self):
+		return frappe.db.sql(
+			"""
+			SELECT
+				COALESCE(SUM(CASE WHEN pe.payment_type = 'Pay' THEN ABS(per.allocated_amount) ELSE 0 END), 0)
+					AS paid_amount,
+				COALESCE(SUM(CASE WHEN pe.payment_type = 'Receive' THEN ABS(per.allocated_amount) ELSE 0 END), 0)
+					AS return_amount
+			FROM `tabPayment Entry` pe
+			INNER JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+			WHERE pe.docstatus = 1
+				AND pe.company = %(company)s
+				AND pe.party_type = 'Employee'
+				AND pe.party = %(employee)s
+				AND per.reference_doctype = 'Employee Advance'
+				AND per.reference_name = %(advance)s
+				AND (
+					(pe.payment_type = 'Pay' AND pe.paid_to = %(advance_account)s)
+					OR (pe.payment_type = 'Receive' AND pe.paid_from = %(advance_account)s)
+				)
+			""",
+			{
+				"company": self.company,
+				"employee": self.employee,
+				"advance": self.name,
+				"advance_account": self.advance_account,
+			},
+			as_dict=True,
+		)[0]
 
 	def create_advance_deduction_entry(self):
 		"""

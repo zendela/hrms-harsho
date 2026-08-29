@@ -180,9 +180,18 @@ doc_events = {
 	},
 	"Timesheet": {"validate": "hrms.hr.utils.validate_active_employee"},
 	"Payment Entry": {
-		"on_submit": "hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
-		"on_cancel": "hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
-		"on_update_after_submit": "hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
+		"on_submit": [
+			"hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
+			"hrms.hr.doctype.employee_advance.employee_advance_reconcile.update_payment_status",
+		],
+		"on_cancel": [
+			"hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
+			"hrms.hr.doctype.employee_advance.employee_advance_reconcile.update_payment_status",
+		],
+		"on_update_after_submit": [
+			"hrms.hr.doctype.expense_claim.expense_claim.update_payment_for_expense_claim",
+			"hrms.hr.doctype.employee_advance.employee_advance_reconcile.update_payment_status",
+		],
 	},
 	"Journal Entry": {
 		"validate": "hrms.hr.doctype.expense_claim.expense_claim.validate_expense_claim_in_jv",
