@@ -254,6 +254,31 @@ class TestEmployeeAdvance(IntegrationTestCase):
 			payment_entry.name,
 		)
 
+	@change_settings(
+		"HR Settings",
+		{"auto_disburse_approved_advances": 0, "advance_deduction_component": None},
+	)
+	def test_existing_payment_entry_reconciles_stale_advance_status(self):
+		employee_name = make_employee("reconcile.payment@employee.advance", "_Test Company")
+		advance = make_employee_advance(employee_name)
+		payment_entry = make_payment_entry(advance)
+
+		frappe.db.set_value(
+			"Employee Advance",
+			advance.name,
+			{"paid_amount": 0, "status": "Unpaid"},
+			update_modified=False,
+		)
+		advance.reload()
+
+		self.assertEqual(
+			advance.create_and_submit_payment_entry(),
+			payment_entry.name,
+		)
+		advance.reload()
+		self.assertEqual(advance.paid_amount, advance.advance_amount)
+		self.assertEqual(advance.status, "Paid")
+
 	@change_settings("HR Settings", {"auto_disburse_approved_advances": 0})
 	def test_auto_recovery_schedule_follows_payment_lifecycle(self):
 		employee_name = make_employee("auto.recovery@employee.advance", "_Test Company")

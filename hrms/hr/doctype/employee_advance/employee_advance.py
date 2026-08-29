@@ -288,6 +288,7 @@ class EmployeeAdvance(Document):
 		if existing:
 			submitted = next((entry for entry in existing if entry.docstatus == 1), None)
 			if submitted:
+				self.reconcile_submitted_payment(submitted.name)
 				return submitted.name
 
 			frappe.throw(
@@ -312,8 +313,26 @@ class EmployeeAdvance(Document):
 		)
 		payment_entry.insert(ignore_permissions=True)
 		payment_entry.submit()
+		self.reconcile_submitted_payment(payment_entry.name)
 		self.db_set("auto_payment_entry", payment_entry.name)
 		return payment_entry.name
+
+	def reconcile_submitted_payment(self, payment_entry_name):
+		"""Refresh this advance from its ledger and refuse false payment success."""
+		self.reload()
+		self.set_total_advance_paid()
+		self.reload()
+
+		precision = self.precision("paid_amount")
+		if flt(self.paid_amount, precision) != flt(self.advance_amount, precision):
+			frappe.throw(
+				_(
+					"Payment Entry {0} is submitted, but the Advance Payment Ledger does not show "
+					"the full advance amount. Repost the Accounting Ledger for the Payment Entry "
+					"and try again."
+				).format(get_link_to_form("Payment Entry", payment_entry_name)),
+				title=_("Advance Payment Reconciliation Failed"),
+			)
 
 	def cancel_unprocessed_advance_deduction_entry(self):
 		"""Cancel the recovery schedule when its payment is reversed.
